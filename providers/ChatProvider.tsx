@@ -3,7 +3,7 @@ import {StreamChat} from "stream-chat";
 import {Chat, OverlayProvider} from "stream-chat-expo";
 import {ActivityIndicator} from "react-native";
 
-const client = StreamChat.getInstance(process.env.EXPO_PUBLIC_STREAM_API_KEY);
+const client = StreamChat.getInstance(process.env.EXPO_PUBLIC_STREAM_API_KEY!);
 
 const ChatProvider = ({children}: PropsWithChildren) => {
     const [isReady, setIsReady] = React.useState(false);
