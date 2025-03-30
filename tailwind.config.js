@@ -9,6 +9,7 @@ module.exports = {
         oldLace: "#f8f3e5",
         jasmine: "#f7dc76",
         jasper: "#d25c41",
+        olivine: "#a3ac74",
         coolGray: {
           100: "#8b98b0",
           200: "#96a1b7",
