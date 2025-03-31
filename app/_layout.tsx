@@ -12,6 +12,10 @@ export default function RootLayout() {
           name="(home)"
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+            name="(auth)"
+            options={{ headerShown: false }}
+        />
       </Stack>
     </>
   </GestureHandlerRootView>;

@@ -1,7 +1,7 @@
 import {Stack} from "expo-router";
 import ChatProvider from "@/providers/ChatProvider";
 
-const _Layout = () => {
+const HomeLayout = () => {
 
 
     return (
@@ -15,4 +15,4 @@ const _Layout = () => {
                 </ChatProvider>
     )
 }
-export default _Layout
+export default HomeLayout
