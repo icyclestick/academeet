@@ -1,12 +1,15 @@
-import {View, Text} from 'react-native'
 import React from 'react'
-import {Stack} from "expo-router";
+import {Redirect, Stack} from "expo-router";
+import {useAuth} from "@/providers/AuthProviders";
 
 const AuthLayout = () => {
+    const {user} = useAuth()
+
+    if(user){
+        return <Redirect href='/(home)/(tabs)' />;
+    }
     return (
-        <Stack>
-            <Stack.Screen name='(auth)' options={{headerShown: false}}/>
-        </Stack>
+        <Stack screenOptions={{headerShown: false}}/>
     )
 }
 export default AuthLayout

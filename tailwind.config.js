@@ -6,6 +6,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        isabelline: "#F0EDED",
         oldLace: "#f8f3e5",
         jasmine: "#f7dc76",
         jasper: "#d25c41",

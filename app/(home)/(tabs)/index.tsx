@@ -11,7 +11,7 @@ export default function Index() {
     }
 
     return (
-    <SafeAreaView className="flex-1 justify-center items-center bg-oldLace gap-4">
+    <SafeAreaView className="flex-1 justify-center items-center bg-isabelline gap-4">
         <Image
             source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
             className="w-36 h-10 bg-gray-300 rounded-lg self-start ml-6"
