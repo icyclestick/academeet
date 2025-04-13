@@ -51,4 +51,9 @@ export const icons = {
     settings,
     sticker,
     studyRoomWhite,
+    studyRoomYellow,
+    timeSand,
+    userWhite,
+    userYellow,
+    videoIcon
 };

@@ -4,9 +4,12 @@ import {GestureHandlerRootView} from "react-native-gesture-handler";
 import {StatusBar} from "react-native";
 import AuthProvider from "@/providers/AuthProviders";
 import React from "react";
+import { useFonts } from 'expo-font';
 
 export default function RootLayout() {
-
+  const [fontsLoaded] = useFonts({
+    'Dortmund-ExtraBold': require('../Assets/Fonts/Dortmund-ExtraBold.otf'),
+  });
 
   return <GestureHandlerRootView style={{ flex: 1 }}>
     <>

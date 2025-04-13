@@ -19,6 +19,9 @@ module.exports = {
         eerieBlack: "#222527",
         night: "#171516",
       },
+      fontFamily: {
+        dortmund: ['Dortmund-ExtraBold'],
+      },
     },
   },
   plugins: [],

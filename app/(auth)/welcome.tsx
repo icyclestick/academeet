@@ -1,18 +1,28 @@
 import {Image, SafeAreaView, Text, TouchableOpacity, View} from "react-native";
+import {images} from "@/constants/images";
 
 const Welcome = () => {
     return (
         <>
-            <SafeAreaView className="flex-1 justify-center items-center bg-isabelline gap-4">
-                <Image
-                    source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
-                    className="w-36 h-36 bg-gray-300 rounded-lg"
-                    resizeMode="cover"
-                />
-                <Text>Smarter Studying Starts Here!</Text>
-                <TouchableOpacity>
-                    <Text>Get Started</Text>
-                </TouchableOpacity>
+            <SafeAreaView className="flex-1 bg-isabelline">
+                {/* Main content container */}
+                <View className="flex-1 justify-center items-center px-4">
+                    <Image
+                        source={images.logoNoBg}
+                        className="w-48 h-48 rounded-lg"
+                        resizeMode="cover"
+                    />
+                    <Text className="font-dortmund text-3xl text-center text-englishViolet mt-10">
+                        Smarter Studying Starts Here!
+                    </Text>
+                </View>
+
+                {/* Button container */}
+                <View className="px-4 pb-8">
+                    <TouchableOpacity className="bg-englishViolet rounded-full py-4 px-8">
+                        <Text className="text-white text-center text-lg font-semibold">Get Started</Text>
+                    </TouchableOpacity>
+                </View>
             </SafeAreaView>
         </>
     );
