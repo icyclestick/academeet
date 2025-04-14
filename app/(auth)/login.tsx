@@ -76,7 +76,7 @@ export default function AuthSignIn() {
                             Don't have an account?{" "}
                             <Text
                                 className="text-blue-500"
-                                onPress={() => router.push('/signup/indexSignUp')}
+                                onPress={() => router.push('/signup/enterEmail')}
                             >
                                 Sign Up
                             </Text>
@@ -114,7 +114,6 @@ export default function AuthSignIn() {
                 >
                     <Text className="text-white text-center font-semibold">Sign In</Text>
                 </TouchableOpacity>
-
             </View>
         </View>
 

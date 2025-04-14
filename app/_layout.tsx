@@ -24,6 +24,10 @@ export default function RootLayout() {
               name="(auth)"
               options={{ headerShown: false }}
           />
+          <Stack.Screen
+              name="(buddy)"
+              options={{ headerShown: false }}
+          />
         </Stack>
         </AuthProvider>
     </>
