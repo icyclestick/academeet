@@ -8,7 +8,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 export default function indexSignUp() {
     // Use the Zustand store
-    const { email, setEmail, password, setPassword, name, setName, resetAuth } = useAuthStore();
+    const {email, password, setPassword, name, setName, resetAuth } = useAuthStore();
     const [isChecked, setIsChecked] = useState(false);
     const [loading, setLoading] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,7 +28,10 @@ export default function indexSignUp() {
             password: password,
         });
 
-        if (error) Alert.alert(error.message);
+        if (error) {
+            console.error(error);
+            Alert.alert('Error', error.message);
+        }
         if (!session) Alert.alert('Please check your inbox for email verification!');
         resetAuth()
         setLoading(false);
@@ -60,20 +63,6 @@ export default function indexSignUp() {
                             placeholderTextColor="gray"
                             autoCapitalize="words" // Corrected autoCapitalize
 
-                        />
-                    </View>
-
-                    {/* userName Input */}
-                    <View className="mt-6">
-                        <Text className="text-gray-700 font-semibold mb-1">User Name</Text>
-                        <TextInput
-                            className="border border-gray-300 rounded-lg px-4 py-3"
-                            onChangeText={(text) => setEmail(text)} //changed to setEmail
-                            value={email} //changed to email
-                            placeholder="email@address.com"
-                            placeholderTextColor="gray"
-                            autoCapitalize="none"
-                            keyboardType="email-address"
                         />
                     </View>
 

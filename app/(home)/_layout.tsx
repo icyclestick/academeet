@@ -7,7 +7,7 @@ const HomeLayout = () => {
     const {user} = useAuth()
 
     if(!user){
-        return <Redirect href={'/(buddy)'} />;
+        return <Redirect href={'/(auth)/login'} />;
     }
 
     return (
