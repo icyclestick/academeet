@@ -1,24 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { StyleSheet, View, Alert } from 'react-native';
-import { Button, Input } from '@rneui/themed';
-import { useAuth } from '@/providers/AuthProviders';
-import Avatar from '@/components/Avatar';
-import { useProfileStore } from '@/stores/profileStore';
+import { StyleSheet, View, Alert, ScrollView } from 'react-native';
+import { Button, Input } from 'react-native-elements';
+import { Session } from '@supabase/supabase-js';
+import { useAuth } from '../../../providers/AuthProvider';
+import Avatar from '../../../components/Avatar';
 
-export default function Profile() {
+export default function ProfileScreen() {
     const { session } = useAuth();
-    const {
-        username,
-        profilePic,
-        bio,
-        university,
-        yearLevel,
-        studyPreferences,
-        setProfile,
-    } = useProfileStore();
-    const [website, setWebsite] = useState('');
+
     const [loading, setLoading] = useState(true);
+    const [username, setUsername] = useState('');
+    const [fullName, setFullname] = useState('');
+    const [website, setWebsite] = useState('');
+    const [avatarUrl, setAvatarUrl] = useState('');
 
     useEffect(() => {
         if (session) getProfile();
@@ -31,14 +26,18 @@ export default function Profile() {
 
             const { data, error, status } = await supabase
                 .from('profiles')
-                .select(`username, name, profilePic, bio, university, yearLevel, studyPreferences`)
-                .eq('id', session.user.id)
+                .select(`username, website, avatar_url, full_name`)
+                .eq('id', session?.user.id)
                 .single();
-
-            if (error && status !== 406) throw error;
+            if (error && status !== 406) {
+                throw error;
+            }
 
             if (data) {
-                setProfile(data);
+                setUsername(data.username);
+                setWebsite(data.website);
+                setAvatarUrl(data.avatar_url);
+                setFullname(data.full_name);
             }
         } catch (error) {
             if (error instanceof Error) {
@@ -49,32 +48,58 @@ export default function Profile() {
         }
     }
 
-    async function updateProfile(updates: any) {
+    async function updateProfile({
+                                     username,
+                                     website,
+                                     avatar_url,
+                                     full_name,
+                                 }: {
+        username: string;
+        website: string;
+        avatar_url: string;
+        full_name: string;
+    }) {
         try {
             setLoading(true);
             if (!session?.user) throw new Error('No user on the session!');
 
-            const { error } = await supabase
-                .from('profiles')
-                .upsert({ ...updates, id: session.user.id, updated_at: new Date() });
+            const updates = {
+                id: session?.user.id,
+                username,
+                website,
+                avatar_url,
+                full_name,
+                updated_at: new Date(),
+            };
 
-            if (error) throw error;
+            const { error } = await supabase.from('profiles').upsert(updates);
+
+            if (error) {
+                throw error;
+            }
         } catch (error) {
-            if (error instanceof Error) Alert.alert(error.message);
+            if (error instanceof Error) {
+                Alert.alert(error.message);
+            }
         } finally {
             setLoading(false);
         }
     }
 
     return (
-        <View style={styles.container}>
-            <View>
+        <ScrollView style={styles.container}>
+            <View style={{ alignItems: 'center' }}>
                 <Avatar
                     size={200}
-                    url={profilePic}
+                    url={avatarUrl}
                     onUpload={(url: string) => {
-                        setProfile({ profilePic: url });
-                        updateProfile({ profilePic: url });
+                        setAvatarUrl(url);
+                        updateProfile({
+                            username,
+                            website,
+                            avatar_url: url,
+                            full_name: fullName,
+                        });
                     }}
                 />
             </View>
@@ -82,20 +107,25 @@ export default function Profile() {
             <View style={[styles.verticallySpaced, styles.mt20]}>
                 <Input label="Email" value={session?.user?.email} disabled />
             </View>
-
+            <View style={styles.verticallySpaced}>
+                <Input
+                    label="Full name"
+                    value={fullName || ''}
+                    onChangeText={(text) => setFullname(text)}
+                />
+            </View>
             <View style={styles.verticallySpaced}>
                 <Input
                     label="Username"
-                    value={username}
-                    onChangeText={(text) => setProfile({ username: text })}
+                    value={username || ''}
+                    onChangeText={(text) => setUsername(text)}
                 />
             </View>
-
             <View style={styles.verticallySpaced}>
                 <Input
-                    label="Bio"
-                    value={bio}
-                    onChangeText={(text) => setProfile({ bio: text })}
+                    label="Website"
+                    value={website || ''}
+                    onChangeText={(text) => setWebsite(text)}
                 />
             </View>
 
@@ -105,11 +135,9 @@ export default function Profile() {
                     onPress={() =>
                         updateProfile({
                             username,
-                            profilePic,
-                            bio,
-                            university,
-                            yearLevel,
-                            studyPreferences,
+                            website,
+                            avatar_url: avatarUrl,
+                            full_name: fullName,
                         })
                     }
                     disabled={loading}
@@ -119,7 +147,7 @@ export default function Profile() {
             <View style={styles.verticallySpaced}>
                 <Button title="Sign Out" onPress={() => supabase.auth.signOut()} />
             </View>
-        </View>
+        </ScrollView>
     );
 }
 
