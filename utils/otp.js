@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 require('dotenv').config();
 
-const { supabase } = require("config/supabaseClient.js");
+const { supabase } = require("../config/supabaseClient.js");
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',

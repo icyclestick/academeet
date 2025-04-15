@@ -1,24 +1,29 @@
 const express = require("express");
 
-// Import the required route modules
+// Import routes
 const matchOperationsRoutes = require("./routes/matchOperations");
 const authenticateToken = require("./middleware/authenticateToken");
+const otp = require("./routes/otp");
+const userOperations = require("./routes/userOperations");
 
 
 
 const app = express();
+app.use(express.json());  
 
-// Middleware setup
-app.use(express.json());  // Built-in middleware for parsing application/json
 
 // Apply the authenticateToken middleware for routes that require authentication
-// If all match-related routes require authentication, use it globally for /api/*
-app.use("/api", authenticateToken, matchOperationsRoutes); // Apply middleware globally to match-related routes
 
 // Default route (optional, just for testing)
-app.get("/", (req, res) => {
-    res.send("Welcome to the Matchmaking API!");
+app.get("/", (req, res) => 
+{
+    res.send("Hello, Academeet");
 });
+
+app.use('/', matchOperationsRoutes);
+app.use('/', otp);
+app.use('/', userOperations)
+
 
 // Start the server
 const PORT = process.env.PORT || 3000;
