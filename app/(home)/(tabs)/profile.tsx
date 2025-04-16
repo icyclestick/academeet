@@ -1,19 +1,34 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { StyleSheet, View, Alert, ScrollView } from 'react-native';
 import { Button, Input } from 'react-native-elements';
 import { Session } from '@supabase/supabase-js';
-import { useAuth } from '../../../providers/AuthProvider';
+import { useAuth } from '@/providers/AuthProviders';
 import Avatar from '../../../components/Avatar';
+import {useProfileStore} from "@/stores/profileStore";
 
 export default function ProfileScreen() {
     const { session } = useAuth();
 
+    const {
+        username,
+        setUsername,
+        fullName,
+        setFullName,
+        avatarUrl,
+        setAvatarUrl,
+        bio,
+        setBio,
+        university,
+        setUniversity,
+        yearLevel,
+        setYearLevel,
+        studyPreferences,
+        setStudyPreferences,
+    } = useProfileStore();
+
     const [loading, setLoading] = useState(true);
-    const [username, setUsername] = useState('');
-    const [fullName, setFullname] = useState('');
     const [website, setWebsite] = useState('');
-    const [avatarUrl, setAvatarUrl] = useState('');
 
     useEffect(() => {
         if (session) getProfile();
@@ -37,7 +52,7 @@ export default function ProfileScreen() {
                 setUsername(data.username);
                 setWebsite(data.website);
                 setAvatarUrl(data.avatar_url);
-                setFullname(data.full_name);
+                setFullName(data.full_name);
             }
         } catch (error) {
             if (error instanceof Error) {
@@ -111,7 +126,7 @@ export default function ProfileScreen() {
                 <Input
                     label="Full name"
                     value={fullName || ''}
-                    onChangeText={(text) => setFullname(text)}
+                    onChangeText={(text) => setFullName(text)}
                 />
             </View>
             <View style={styles.verticallySpaced}>

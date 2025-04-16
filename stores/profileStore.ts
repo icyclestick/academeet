@@ -8,37 +8,49 @@ type StudyPreferences = {
 interface ProfileState {
     id: string;
     username: string;
-    full_name: string;
-    avatar_url: string;
+    fullName: string;
+    avatarUrl: string;
     bio: string;
     university: string;
-    year_level: string;
-    study_preferences: StudyPreferences;
+    yearLevel: string;
+    studyPreferences: StudyPreferences;
+    setUsername: (username: string) => void;
+    setFullName: (fullName: string) => void;
+    setAvatarUrl: (avatarUrl: string) => void;
+    setBio: (bio: string) => void;
+    setUniversity: (university: string) => void;
+    setYearLevel: (yearLevel: string) => void;
+    setStudyPreferences: (studyPreferences: StudyPreferences) => void;
 
-    setProfile: (profile: Partial<ProfileState>) => void;
     resetProfile: () => void;
 }
 
 export const useProfileStore = create<ProfileState>((set) => ({
     id: '',
     username: '',
-    full_name: '',
-    avatar_url: '',
+    fullName: '',
+    avatarUrl: '',
     bio: '',
     university: '',
-    year_level: '',
-    study_preferences: {},
+    yearLevel: '',
+    studyPreferences: {},
+    setUsername: (username) => set({username}),
+    setFullName: (fullName) =>  set({fullName}),
+    setAvatarUrl: (avatarUrl) => set({avatarUrl}),
+    setBio: (bio) => set({bio}),
+    setUniversity: (university) => set({university}),
+    setYearLevel: (yearLevel) => set({yearLevel}),
+    setStudyPreferences: (studyPreferences) => set({studyPreferences}),
 
-    setProfile: (profile) => set((state) => ({ ...state, ...profile })),
     resetProfile: () =>
         set({
             id: '',
             username: '',
-            full_name: '',
-            avatar_url: '',
+            fullName: '',
+            avatarUrl: '',
             bio: '',
             university: '',
-            year_level: '',
-            study_preferences: {},
+            yearLevel: '',
+            studyPreferences: {},
         }),
 }));
