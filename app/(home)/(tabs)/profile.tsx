@@ -15,6 +15,8 @@ export default function ProfileScreen() {
         setUsername,
         fullName,
         setFullName,
+        website,
+        setWebsite,
         avatarUrl,
         setAvatarUrl,
         bio,
@@ -28,7 +30,6 @@ export default function ProfileScreen() {
     } = useProfileStore();
 
     const [loading, setLoading] = useState(true);
-    const [website, setWebsite] = useState('');
 
     useEffect(() => {
         if (session) getProfile();

@@ -13,7 +13,10 @@ const index = () => {
                     resizeMode="cover"
                 />
                 <View className="px-4 pb-8 mt-10">
-                    <TouchableOpacity className="bg-englishViolet rounded-lg py-4 px-8">
+                    <TouchableOpacity
+                        className="bg-englishViolet rounded-lg py-4 px-8"
+                        onPress={() => router.push("/(buddy)/quiz/selectAvatar")}
+                    >
                         <Text
                             className="text-white text-center text-lg font-semibold"
                         >

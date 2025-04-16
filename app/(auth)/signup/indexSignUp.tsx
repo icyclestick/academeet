@@ -7,8 +7,7 @@ import {CheckBox} from "react-native-elements";
 import { useAuthStore } from "@/stores/authStore";
 
 export default function indexSignUp() {
-    // Use the Zustand store
-    const {email, password, setPassword, name, setName, resetAuth } = useAuthStore();
+    const {email, password, setPassword, resetAuth } = useAuthStore();
     const [isChecked, setIsChecked] = useState(false);
     const [loading, setLoading] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,20 +50,6 @@ export default function indexSignUp() {
 
                     <Text className="text-black text-2xl font-bold">Sign Up</Text>
                     <Text className="text-gray-500 text-base">Create an account to get started</Text>
-
-                    {/* Name Input */}
-                    <View className="mt-6">
-                        <Text className="text-gray-700 font-semibold mb-1">Name</Text>
-                        <TextInput
-                            className="border border-gray-300 rounded-lg px-4 py-3"
-                            onChangeText={(text) => setName(text)} // Use setName from your store
-                            value={name} // Use name from your store
-                            placeholder="Your Name"
-                            placeholderTextColor="gray"
-                            autoCapitalize="words" // Corrected autoCapitalize
-
-                        />
-                    </View>
 
                     {/* Password Input */}
                     <View className="mt-4">
