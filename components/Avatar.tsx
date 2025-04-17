@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { StyleSheet, View, Alert, Image, Button } from 'react-native'
+import {StyleSheet, View, Text, Alert, Image, Button, TouchableOpacity, ActivityIndicator} from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
+import {Feather} from "@expo/vector-icons";
 
 interface Props {
     size: number
@@ -89,42 +90,22 @@ export default function Avatar({ url, size = 150, onUpload }: Props) {
     }
 
     return (
-        <View>
-            {avatarUrl ? (
+        <TouchableOpacity
+            onPress={uploadAvatar}
+            disabled={uploading}
+            className="items-center justify-center w-24 h-24 rounded-lg bg-gray-200 overflow-hidden border border-gray-300"
+        >
+            {uploading ? (
+                <ActivityIndicator size="small" color="#9ca3af" />
+            ) : avatarUrl ? (
                 <Image
                     source={{ uri: avatarUrl }}
-                    accessibilityLabel="Avatar"
-                    style={[avatarSize, styles.avatar, styles.image]}
+                    className="w-full h-full"
+                    resizeMode="cover"
                 />
             ) : (
-                <View style={[avatarSize, styles.avatar, styles.noImage]} />
+                <Feather name="plus" size={32} color="#9ca3af" />
             )}
-            <View>
-                <Button
-                    title={uploading ? 'Uploading ...' : 'Upload'}
-                    onPress={uploadAvatar}
-                    disabled={uploading}
-                />
-            </View>
-        </View>
+        </TouchableOpacity>
     )
 }
-
-const styles = StyleSheet.create({
-    avatar: {
-        borderRadius: 5,
-        overflow: 'hidden',
-        maxWidth: '100%',
-    },
-    image: {
-        objectFit: 'cover',
-        paddingTop: 0,
-    },
-    noImage: {
-        backgroundColor: '#333',
-        borderWidth: 1,
-        borderStyle: 'solid',
-        borderColor: 'rgb(200, 200, 200)',
-        borderRadius: 5,
-    },
-})

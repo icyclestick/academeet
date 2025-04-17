@@ -7,10 +7,60 @@ import { useAuth } from "@/providers/AuthProviders";
 import {Entypo} from "@expo/vector-icons";
 import {router} from "expo-router";
 import {updateProfileData} from "@/lib/api/profile";
+import PredefinedAvatarPicker from "@/components/PredefinedAvatarPicker";
+
+const predefinedAvatars = [
+    {
+        id: 'alien',
+        url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//alienAvatar.png',
+        bgColor: '#AEE6DD',
+    },
+    {
+        id: 'bernese',
+        url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//berneseAvatar.png',
+        bgColor: '#FFCC81',
+    },
+    {
+        id: 'dino',
+        url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//dinoAvatar.png',
+        bgColor: '#E791FE',
+    },
+    {
+        id: 'ghost',
+        url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//ghostAvatar.png',
+        bgColor: '#FFDB01',
+    },
+    {
+        id: 'koala',
+        url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//koalaFlamingoAvatar.png',
+        bgColor: '#DB9AFE',
+    },
+    {
+       id: 'mon',
+       url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//monsterAvatar.png',
+       bgColor: '#DAE83D',
+    },
+    {
+        id: 'octo',
+        url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//octopusAvatar.png',
+        bgColor: '#42BCFD',
+    },
+    {
+        id: 'penguin',
+        url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//penguinAvatar.png',
+        bgColor: '#9D91FF',
+    },
+    {
+        id: 'turtle',
+        url: 'https://upqmmkojbkshfrmtvwpf.supabase.co/storage/v1/object/public/predefined-avatars//turtleAvatar.png',
+        bgColor: '#25CBFF',
+    }
+]
 
 const SelectAvatar = () => {
     const { session } = useAuth();
     const { avatarUrl, setAvatarUrl } = useProfileStore();
+    const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
     const handleAvatarUpload = async (url: string) => {
@@ -52,11 +102,21 @@ const SelectAvatar = () => {
                 <Text className="text-black text-2xl font-bold">Sign Up</Text>
                 <Text className="text-gray-500 text-base">Create an account to get started</Text>
 
-                <Avatar
-                    size={200}
-                    url={avatarUrl}
-                    onUpload={(url: string) => handleAvatarUpload(url)}
-                />
+                <View className="flex-row">
+                    <PredefinedAvatarPicker
+                        avatars={predefinedAvatars}
+                        selectedAvatar={selectedAvatar}
+                        onSelect={setSelectedAvatar}
+                    />
+                </View>
+                <View className="my-4">
+                    <Avatar
+                        size={85}
+                        url={avatarUrl}
+                        onUpload={(url: string) => handleAvatarUpload(url)}
+                    />
+                </View>
+
             </View>
 
             <View className="w-full items-center py-10">
