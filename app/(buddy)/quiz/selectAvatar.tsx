@@ -8,6 +8,7 @@ import {Entypo} from "@expo/vector-icons";
 import {router} from "expo-router";
 import {updateProfileData} from "@/lib/api/profile";
 import PredefinedAvatarPicker from "@/components/PredefinedAvatarPicker";
+import BackButton from "@/components/BackButton";
 
 const predefinedAvatars = [
     {
@@ -91,18 +92,12 @@ const SelectAvatar = () => {
     return (
         <View className="flex-1 bg-white px-6 py-12 justify-between">
             <View>
-                {/* Back Button */}
-                <TouchableOpacity
-                    className="mb-12"
-                    onPress={() => router.back()}
-                >
-                    <Entypo name="chevron-left" size={24} color="black" />
-                </TouchableOpacity>
+                <BackButton />
 
                 <Text className="text-black text-2xl font-bold">Sign Up</Text>
                 <Text className="text-gray-500 text-base">Create an account to get started</Text>
 
-                <View className="flex-row">
+                <View className="flex-row flex-wrap">
                     <PredefinedAvatarPicker
                         avatars={predefinedAvatars}
                         selectedAvatar={selectedAvatar}
@@ -124,6 +119,7 @@ const SelectAvatar = () => {
                     disabled={loading}
                     onPress={async () => {
                         await handleAvatarUpload(avatarUrl);
+                        router.push('/(buddy)/quiz/form');
                     }}
                     className="bg-englishViolet rounded-full px-24 py-4"
                 >

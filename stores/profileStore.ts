@@ -1,32 +1,8 @@
 // stores/profileStore.ts
 import { create } from 'zustand';
+import {ProfileState} from "@/types/Profile";
 
-type StudyPreferences = {
-    [key: string]: any;
-};
 
-interface ProfileState {
-    id?: string;
-    username?: string;
-    fullName?: string;
-    website?: string;
-    avatarUrl?: string;
-    bio?: string;
-    university?: string;
-    yearLevel?: string;
-    studyPreferences?: StudyPreferences;
-
-    setUsername: (username: string) => void;
-    setFullName: (fullName: string) => void;
-    setWebsite: (website: string) => void;
-    setAvatarUrl: (avatarUrl: string) => void;
-    setBio: (bio: string) => void;
-    setUniversity: (university: string) => void;
-    setYearLevel: (yearLevel: string) => void;
-    setStudyPreferences: (studyPreferences: StudyPreferences) => void;
-
-    resetProfile: () => void;
-}
 
 
 export const useProfileStore = create<ProfileState>((set) => ({
@@ -37,8 +13,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
     avatarUrl: undefined,
     bio: undefined,
     university: undefined,
-    yearLevel: undefined,
-    studyPreferences: {},
+    studyPreferences: { yearLevel: '', preferredTime: '', accountabilityLevel: '', matchPreference: '' },
 
     setUsername: (username) => set({ username }),
     setFullName: (fullName) => set({ fullName }),
@@ -46,8 +21,25 @@ export const useProfileStore = create<ProfileState>((set) => ({
     setAvatarUrl: (avatarUrl) => set({ avatarUrl }),
     setBio: (bio) => set({ bio }),
     setUniversity: (university) => set({ university }),
-    setYearLevel: (yearLevel) => set({ yearLevel }),
-    setStudyPreferences: (studyPreferences) => set({ studyPreferences }),
+
+    setStudyPreferences: (prefs) => set({ studyPreferences: prefs }),
+
+    setPreferredTime: (time) =>
+        set((state) => ({
+            studyPreferences: { ...state.studyPreferences, preferredTime: time },
+        })),
+    setAccountabilityLevel: (level) =>
+        set((state) => ({
+            studyPreferences: { ...state.studyPreferences, accountabilityLevel: level },
+        })),
+    setMatchPreference: (preference) =>
+        set((state) => ({
+            studyPreferences: { ...state.studyPreferences, matchPreference: preference },
+        })),
+    setYearLevel: (yearLevel) =>
+        set((state) => ({
+            studyPreferences: { ...state.studyPreferences, yearLevel },
+        })),
 
     resetProfile: () =>
         set({
@@ -58,7 +50,6 @@ export const useProfileStore = create<ProfileState>((set) => ({
             avatarUrl: undefined,
             bio: undefined,
             university: undefined,
-            yearLevel: undefined,
-            studyPreferences: {},
+            studyPreferences: { yearLevel: '', preferredTime: '', accountabilityLevel: '', matchPreference: '' },
         }),
 }));
