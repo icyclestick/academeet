@@ -74,7 +74,6 @@ const SelectAvatar = () => {
             await updateProfileData({
                 userId: session.user.id,
                 avatar_url: url,
-                // Pass undefined for the fields you don't want to update
                 username: undefined,
                 website: undefined,
                 full_name: undefined,
@@ -119,7 +118,7 @@ const SelectAvatar = () => {
                     disabled={loading}
                     onPress={async () => {
                         await handleAvatarUpload(avatarUrl);
-                        router.push('/(buddy)/quiz/form');
+                        router.push('/(buddy)/quiz/Name');
                     }}
                     className="bg-englishViolet rounded-full px-24 py-4"
                 >

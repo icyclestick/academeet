@@ -42,18 +42,34 @@ const Form = () => {
         };
 
         setLoading(true);
-        const { error } = await supabase
-            .from('profiles') // your table name
-            .update({ preferences: preferences })
-            .eq('id', profile.id); // adjust if using another key like email
 
-        if (error) {
-            console.error(error);
+        // 1. Update preferences in 'profiles'
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ preferences: preferences })
+            .eq('id', profile.id);
+
+        if (updateError) {
+            console.error(updateError);
             Alert.alert('Error saving preferences');
-        } else {
-            // router.push('/nextPage'); // redirect as needed
-            Alert.alert('Successfully updated preferences');
+            setLoading(false);
+            return;
         }
+
+        // 2. Insert into 'looking_match'
+        const { error: insertError } = await supabase
+            .from('looking_match')
+            .insert([{ user_id: profile.id }]); // Assuming 'user_id' references the user
+
+        if (insertError) {
+            console.error(insertError);
+            Alert.alert('Error adding to match queue');
+        } else {
+            Alert.alert('Successfully updated preferences and joined match queue');
+            // Optionally navigate somewhere else:
+            // router.push('/waiting-room')
+        }
+
         setLoading(false);
     };
 

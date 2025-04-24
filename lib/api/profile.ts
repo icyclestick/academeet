@@ -8,7 +8,7 @@ export const updateProfileData = async ({
                                             full_name,
                                         }: {
     userId: string;
-    avatar_url: string;
+    avatar_url?: string;
     username?: string;
     website?: string;
     full_name?: string;
