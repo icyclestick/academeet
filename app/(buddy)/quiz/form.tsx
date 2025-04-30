@@ -59,11 +59,12 @@ const Form = () => {
         // 2. Insert into 'looking_match'
         const { error: insertError } = await supabase
             .from('looking_match')
-            .insert([{ user_id: profile.id }]); // Assuming 'user_id' references the user
+            .insert([{ user_id: profile.id }]);
 
         if (insertError) {
             console.error(insertError);
             Alert.alert('Error adding to match queue');
+            setLoading(false)
         } else {
             Alert.alert('Successfully updated preferences and joined match queue');
             // Optionally navigate somewhere else:

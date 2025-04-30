@@ -6,7 +6,7 @@ const AuthLayout = () => {
     const {user} = useAuth()
 
     if(user){
-        return <Redirect href='/(buddy)' />;
+        return <Redirect href='/(home)/(tabs)' />;
     }
     return (
         <Stack screenOptions={{headerShown: false}}/>
