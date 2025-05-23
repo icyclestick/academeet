@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+const { colors } = require('tailwindcss/defaultTheme');
 module.exports = {
   // NOTE: Update this to include the paths to all of your component files.
   content: ["./app/**/*.{js,jsx,ts,tsx}"],
@@ -6,6 +7,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        ...colors,
         isabelline: "#F0EDED",
         oldLace: "#f8f3e5",
         jasmine: "#f7dc76",
