@@ -1,8 +1,11 @@
 import {Stack} from "expo-router";
+import ChatProvider from "@/providers/ChatProvider";
 
 const buddyLayout = () => {
     return (
-        <Stack screenOptions={{headerShown: false}}/>
+        <ChatProvider>
+            <Stack screenOptions={{headerShown: false}}/>
+        </ChatProvider>
     )
 }
 export default buddyLayout

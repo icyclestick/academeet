@@ -81,6 +81,7 @@ export default function Index() {
                 />
             )}
             <Calendar
+            showSixWeeks={true}
                 style={{
                     backgroundColor: "#96a1b7",
                     borderRadius: 10,
@@ -92,7 +93,7 @@ export default function Index() {
                 theme={{
                     "stylesheet.day.basic": {
                         base: {
-                            height: 30, // Adjust cell height
+                            height: 25, // Adjust cell height
                             width: 30,  // Adjust cell width
                             alignItems: "center",
                             justifyContent: "center",
@@ -107,9 +108,9 @@ export default function Index() {
                     textDisabledColor: "#C7C3BC", // Faded color for disabled days
                     arrowColor: "#EDE8E2", // White arrows
                     monthTextColor: "#FFFFFF",
-                    textDayFontSize: 14,
-                    textMonthFontSize: 18,
-                    textDayHeaderFontSize: 14,
+                    textDayFontSize: 12, // try adjusting to fit inside current setup
+                    textMonthFontSize: 14, // try adjusting to fit inside current setup
+                    textDayHeaderFontSize: 12, // try adjusting to fit inside current setup
                     textMonthFontWeight: "700",
                     textDayFontWeight: "bold",
                     textDayStyle: { lineHeight: 16 },
