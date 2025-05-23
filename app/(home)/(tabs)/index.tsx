@@ -23,8 +23,64 @@ export default function Index() {
             events: ['New Year’s Day', 'Shift Out Onboarding'],
             tasks: ['Study Session with Kurt', 'DesAlgo Project Proposal', 'Review for Departmentals'],
         },
+
+        '2025-03-10': {
+            events: ['New Year’s Day', 'Shift Out Onboarding'],
+            tasks: ['Study Session with Kurt', 'DesAlgo Project Proposal', 'Review for Departmentals'],
+        },
+
+        '2025-03-22': {
+            events: ['New Year’s Day', 'Shift Out Onboarding'],
+            tasks: ['Study Session with Kurt', 'DesAlgo Project Proposal', 'Review for Departmentals'],
+        },
+
+        '2025-03-11': {
+            events: ['New Year’s Day', 'Shift Out Onboarding'],
+            tasks: ['Study Session with Kurt', 'DesAlgo Project Proposal', 'Review for Departmentals'],
+        },
         // Add more dates and their corresponding events and tasks here
     };
+
+
+    const markedDates = Object.keys(mockData).reduce((acc, date) => {
+        acc[date] = {
+          customStyles: {
+            container: {
+              borderBottomWidth: 4,
+              borderBottomColor: '#503E74',
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
+              paddingBottom: 2,
+              backgroundColor: 'transparent', // default transparent
+            },
+            text: {
+              fontWeight: 'bold',
+              color: '#EDE8E2',
+              marginBottom: -4,
+            },
+          },
+        };
+        return acc;
+      }, {} as { [date: string]: any });
+      
+      // Add style for selectedDate with transparent colored background:
+      if (selectedDate) {
+        markedDates[selectedDate] = {
+          ...(markedDates[selectedDate] || {}),
+          customStyles: {
+            ...(markedDates[selectedDate]?.customStyles || {}),
+            container: {
+              ...(markedDates[selectedDate]?.customStyles?.container || {}),
+              backgroundColor: 'rgba(80, 62, 116, 0.3)', // semi-transparent purple-ish color
+              borderRadius: 5, // rounded edges around date
+            },
+          },
+        };
+      }
+      
+      
+      
+      
 
     const handleDayLongPress = (day: { dateString: string; day: number; month: number; year: number }) => {
         const firstDayOfMonth = new Date(day.year, day.month - 1, 1);
@@ -116,6 +172,8 @@ export default function Index() {
                     textDayStyle: { lineHeight: 16 },
                     textSectionTitleStyle: { fontSize: 12 },
                 }}
+                markingType="custom"
+                markedDates={markedDates}
                 onDayPress={(day: DateData) => {
                     console.log('selected day', day);
                 }}
