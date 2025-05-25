@@ -1,80 +1,260 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import type React from "react"
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from "react-native"
+import { Ellipsis } from "lucide-react-native"
 
-type Props = {
-    visible: boolean;
-    date: string;
-    position: { top: number; left: number };
-    events?: string[];
-    tasks?: string[];
-    onClose: () => void;
-};
+// Get screen dimensions and compute popup bounds
+const screenWidth = Dimensions.get("window").width
+const screenHeight = Dimensions.get("window").height
+const popupWidth = Math.min(261, screenWidth * 0.9)
+const popupHeight = Math.min(250, screenHeight * 0.7)
+const SCREEN_PADDING = 16 // Minimum distance from screen edges
+const DATE_OFFSET = 40 // Minimum distance from the original date position
 
-const DatePopup = ({ visible, date, position, events = [], tasks = [], onClose }: Props) => {
-    if (!visible) return null;
+interface DatePopupProps {
+  visible: boolean
+  date: string
+  position: { top: number; left: number }
+  events: string[]
+  tasks: string[]
+  onClose: () => void
+}
 
-    const readableDate = new Date(date).toDateString();
+const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, tasks, onClose }) => {
+  if (!visible) return null
 
-    return (
-        <View style={[styles.popup, position]}>
-            <Text style={styles.date}>{readableDate}</Text>
+  const formatDate = (dateString: string) => {
+    const dateObj = new Date(dateString)
+    const today = new Date()
 
-            {events.length > 0 && (
-                <>
-                    <Text style={styles.section}>Events</Text>
-                    {events.map((event, index) => (
-                        <Text key={index}>• {event}</Text>
-                    ))}
-                </>
-            )}
+    const isToday =
+      dateObj.getDate() === today.getDate() &&
+      dateObj.getMonth() === today.getMonth() &&
+      dateObj.getFullYear() === today.getFullYear()
 
-            {tasks.length > 0 && (
-                <>
-                    <Text style={styles.section}>Tasks</Text>
-                    {tasks.map((task, index) => (
-                        <Text key={index}>• {task}</Text>
-                    ))}
-                </>
-            )}
+    const options: Intl.DateTimeFormatOptions = {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }
 
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Text style={styles.closeText}>Close</Text>
-            </TouchableOpacity>
+    const formattedDate = dateObj.toLocaleDateString("en-US", options)
+    return isToday ? `Today, ${formattedDate}` : formattedDate
+  }
+
+  // Calculate optimal position to avoid screen bounds and original date
+  const calculatePosition = () => {
+    let adjustedLeft = position.left
+    let adjustedTop = position.top
+
+    // Try to position popup to the right of the date first
+    if (position.left + DATE_OFFSET + popupWidth <= screenWidth - SCREEN_PADDING) {
+      adjustedLeft = position.left + DATE_OFFSET
+    }
+    // If not enough space on right, try left
+    else if (position.left - DATE_OFFSET - popupWidth >= SCREEN_PADDING) {
+      adjustedLeft = position.left - DATE_OFFSET - popupWidth
+    }
+    // If neither side works, center horizontally with bounds checking
+    else {
+      adjustedLeft = Math.max(
+        SCREEN_PADDING,
+        Math.min(screenWidth - popupWidth - SCREEN_PADDING, position.left - popupWidth / 2),
+      )
+    }
+
+    // Try to position popup below the date first
+    if (position.top + DATE_OFFSET + popupHeight <= screenHeight - SCREEN_PADDING) {
+      adjustedTop = position.top + DATE_OFFSET
+    }
+    // If not enough space below, try above
+    else if (position.top - DATE_OFFSET - popupHeight >= SCREEN_PADDING) {
+      adjustedTop = position.top - DATE_OFFSET - popupHeight
+    }
+    // If neither works, center vertically with bounds checking
+    else {
+      adjustedTop = Math.max(
+        SCREEN_PADDING,
+        Math.min(screenHeight - popupHeight - SCREEN_PADDING, position.top - popupHeight / 2),
+      )
+    }
+
+    // Final bounds checking to ensure popup stays within screen
+    adjustedLeft = Math.max(SCREEN_PADDING, Math.min(adjustedLeft, screenWidth - popupWidth - SCREEN_PADDING))
+
+    adjustedTop = Math.max(SCREEN_PADDING, Math.min(adjustedTop, screenHeight - popupHeight - SCREEN_PADDING))
+
+    return { left: adjustedLeft, top: adjustedTop }
+  }
+
+  const adjustedPosition = calculatePosition()
+
+  return (
+    <>
+      {/* Background overlay */}
+      <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1} />
+
+      {/* Popup */}
+      <View
+        style={[
+          styles.popup,
+          {
+            top: adjustedPosition.top,
+            left: adjustedPosition.left,
+            width: popupWidth,
+            height: popupHeight,
+          },
+        ]}
+      >
+        <View style={styles.header}>
+          <Text style={styles.dateText}>{formatDate(date)}</Text>
+          <TouchableOpacity style={styles.menuButton} onPress={onClose}>
+            <Ellipsis size={20} color="#666" />
+          </TouchableOpacity>
         </View>
-    );
-};
+
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>EVENTS</Text>
+            {events && events.length > 0 ? (
+              events.map((event, index) => (
+                <View key={`event-${index}`} style={styles.itemContainer}>
+                  <View style={styles.purpleBar} />
+                  <Text style={styles.itemText}>{event}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No events</Text>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>TASKS</Text>
+            {tasks && tasks.length > 0 ? (
+              tasks.map((task, index) => (
+                <View key={`task-${index}`} style={styles.itemContainer}>
+                  <View style={styles.purpleBar} />
+                  <Text style={styles.itemText}>{task}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No tasks</Text>
+            )}
+          </View>
+        </ScrollView>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.addButton}>
+            <Text style={styles.buttonText}>Add Event</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton}>
+            <Text style={styles.buttonText}>Add Task</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </>
+  )
+}
 
 const styles = StyleSheet.create({
-    popup: {
-        position: 'absolute',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 12,
-        width: 200,
-        zIndex: 20,
-        elevation: 6,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-    },
-    date: {
-        fontWeight: 'bold',
-        marginBottom: 6,
-    },
-    section: {
-        marginTop: 8,
-        fontWeight: 'bold',
-        fontSize: 12,
-        textTransform: 'uppercase',
-    },
-    closeButton: {
-        marginTop: 10,
-        alignSelf: 'flex-end',
-    },
-    closeText: {
-        color: 'purple',
-    },
-});
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    zIndex: 999,
+  },
+  popup: {
+    position: "absolute",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  dateText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "500",
+    flex: 1,
+  },
+  menuButton: {
+    padding: 4,
+    borderRadius: 4,
+  },
+  scrollContainer: {
+    flex: 1,
+    maxHeight: popupHeight - 120, // Account for header and buttons
+  },
+  section: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  itemContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    paddingVertical: 2,
+  },
+  purpleBar: {
+    width: 3,
+    height: 16,
+    backgroundColor: "#503E74",
+    marginRight: 10,
+    borderRadius: 1.5,
+  },
+  itemText: {
+    fontSize: 14,
+    color: "#333",
+    flex: 1,
+    lineHeight: 18,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#999",
+    fontStyle: "italic",
+    marginLeft: 13,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+    gap: 8,
+  },
+  addButton: {
+    backgroundColor: "#F8F9FA",
+    borderWidth: 1,
+    borderColor: "#E9ECEF",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    flex: 1,
+  },
+  buttonText: {
+    fontSize: 13,
+    color: "#495057",
+    fontWeight: "500",
+  },
+})
 
-export default DatePopup;
+export default DatePopup
