@@ -55,14 +55,14 @@ const Form = () => {
             accountability: accountValue,
             matchPreference: matchValue,
             major: majorValue, 
+            university: universityValue 
         };
 
         setLoading(true);
 
-        // 1. Update preferences and university by name in 'profiles'
         const { error: updateError } = await supabase
             .from('profiles')
-            .update({ preferences: preferences, university: universityValue }) 
+            .update({ preferences })
             .eq('id', profile.id);
 
         if (updateError) {
@@ -72,7 +72,6 @@ const Form = () => {
             return;
         }
 
-        // 2. Insert into 'looking_match'
         const { error: insertError } = await supabase
             .from('looking_match')
             .insert([{ user_id: profile.id }]);
