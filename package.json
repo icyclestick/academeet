@@ -27,6 +27,7 @@
     "expo-status-bar": "~2.2.3",
     "expo-video": "~2.1.9",
     "https-browserify": "^1.0.0",
+    "lucide-react-native": "^0.511.0",
     "nativewind": "^4.1.23",
     "react": "19.0.0",
     "react-native": "0.79.2",
