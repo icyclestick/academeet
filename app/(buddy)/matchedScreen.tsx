@@ -5,12 +5,14 @@ import {supabase} from "@/lib/supabase";
 import { router } from 'expo-router';
 import { useProfileStore } from '@/stores/profileStore';
 import { useEffect } from 'react';
+import { useChatContext } from 'stream-chat-expo';
 
 const MatchedScreen = () => {
     const { profile, session } = useAuth();
     const { matchedProfiles, loading, error } = useMatchedProfiles(profile?.id);
     const setMatchedBuddy = useProfileStore((state) => state.setMatchedBuddy);
     const resetBuddy = useProfileStore((state) => state.resetBuddy);
+    const { client } = useChatContext();
 
     // Set buddy state when matchedProfiles is loaded
     useEffect(() => {
@@ -19,6 +21,9 @@ const MatchedScreen = () => {
         }
     }, [matchedProfiles, setMatchedBuddy]);
 
+    // Helper to get buddyId (the other user in the match)
+    const buddyId = matchedProfiles.length > 0 ? matchedProfiles[0].id : null;
+
     const handleUnmatch = () => {
         Alert.alert(
             "Unmatch Buddy",
@@ -26,16 +31,26 @@ const MatchedScreen = () => {
             [
                 { text: "Cancel", style: "cancel" },
                 { text: "Unmatch", style: "destructive", onPress: async () => {
-                    if (session?.user?.id) {
-                        // Delete all matches where the user is either user_id or buddy_id
+                    if (session?.user?.id && buddyId) {
+                        // Soft unmatch: set is_active to false for both directions
                         await supabase
                             .from('matches')
-                            .delete()
-                            .or(`user_id.eq.${session.user.id},buddy_id.eq.${session.user.id}`);
+                            .update({ is_active: false })
+                            .or(`and(user1_id.eq.${session.user.id},user2_id.eq.${buddyId}),and(user1_id.eq.${buddyId},user2_id.eq.${session.user.id})`);
                     }
-                    // Reset matched buddy state in your store
+                    // Hide Stream channel for current user
+                    if (client && buddyId && session?.user?.id) {
+                        const members = [session.user.id, buddyId].sort();
+                        const channel = client.channel('messaging', {
+                            members,
+                        });
+                        try {
+                            await channel.hide();
+                        } catch (e) {
+                            console.warn('Failed to hide Stream channel:', e);
+                        }
+                    }
                     resetBuddy();
-                    // Redirect to quiz (or waiting room if you prefer)
                     router.replace('/(buddy)/quiz/form');
                 }}
             ]

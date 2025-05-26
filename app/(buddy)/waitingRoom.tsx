@@ -9,21 +9,22 @@ const WaitingRoom = () => {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      // Replace with your actual logic to check for a match
-      const { data } = await supabase
+      // Watch for matches where the user is either user_id or buddy_id
+      const { data: matches, error } = await supabase
         .from('matches')
         .select('*')
-        .eq('user_id', profile.id)
+        .or(`user_id.eq.${profile.id},buddy_id.eq.${profile.id}`)
+        .limit(1)
         .single();
 
-      if (data) {
+      if (matches) {
         clearInterval(interval);
         router.replace('/(buddy)/matchedScreen');
       }
     }, 3000); // Poll every 3 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [profile.id]);
 
   return (
     <View className="flex-1 items-center justify-center bg-white">
