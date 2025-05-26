@@ -9,15 +9,16 @@ const WaitingRoom = () => {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      // Watch for matches where the user is either user_id or buddy_id
-      const { data: matches, error } = await supabase
+      // Watch for active matches where the user is either user1_id or user2_id
+      const { data: match, error } = await supabase
         .from('matches')
-        .select('*')
-        .or(`user_id.eq.${profile.id},buddy_id.eq.${profile.id}`)
+        .select('id')
+        .or(`user1_id.eq.${profile.id},user2_id.eq.${profile.id}`)
+        .eq('is_active', true)
         .limit(1)
         .single();
 
-      if (matches) {
+      if (match) {
         clearInterval(interval);
         router.replace('/(buddy)/matchedScreen');
       }
