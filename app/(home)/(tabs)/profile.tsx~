@@ -19,12 +19,6 @@ export default function ProfileScreen() {
         setWebsite,
         avatarUrl,
         setAvatarUrl,
-        bio,
-        setBio,
-        university,
-        setUniversity,
-        studyPreferences,
-        setStudyPreferences,
     } = useProfileStore();
 
     const [loading, setLoading] = useState<boolean>(true);

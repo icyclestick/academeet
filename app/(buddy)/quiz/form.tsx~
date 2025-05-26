@@ -54,15 +54,15 @@ const Form = () => {
             studyTime: timeValue,
             accountability: accountValue,
             matchPreference: matchValue,
-            major: majorValue, 
+            major: majorValue.id, // This is now the major's id (fod1p)
         };
 
         setLoading(true);
 
-        // 1. Update preferences and university by name in 'profiles'
+        // 1. Update preferences and university by ID in 'profiles'
         const { error: updateError } = await supabase
             .from('profiles')
-            .update({ preferences: preferences, university: universityValue }) 
+            .update({ preferences: preferences, university: universityValue.id }) // universityValue is now the university id
             .eq('id', profile.id);
 
         if (updateError) {
@@ -108,7 +108,7 @@ const Form = () => {
                             Studying is better together. Let’s find your perfect match!
                         </Text>
                     </View>
-                    <View className="gap-2" style={{ zIndex: 100, overflow: 'visible' }}>
+                    <View className="gap-2" style={{ zIndex: 4000, overflow: 'visible' }}>
                         <Text className="font-bold">Year Level</Text>
                         <DropDownPicker
                             placeholder="Select Year Level"
@@ -125,7 +125,7 @@ const Form = () => {
                             listMode="SCROLLVIEW"
                         />
                     </View>
-                    <View className="gap-2" style={{ zIndex: 90, overflow: 'visible' }}>
+                    <View className="gap-2" style={{ zIndex: 3000, overflow: 'visible' }}>
                         <Text className="font-bold">Study Time Preference</Text>
                         <DropDownPicker
                             placeholder="Preferred Study Time"
@@ -142,7 +142,7 @@ const Form = () => {
                             listMode="SCROLLVIEW"
                         />
                     </View>
-                    <View className="gap-2" style={{ zIndex: 80, overflow: 'visible' }}>
+                    <View className="gap-2" style={{ zIndex: 2000, overflow: 'visible' }}>
                         <Text className="font-bold">Accountability Level</Text>
                         <DropDownPicker
                             placeholder="Accountability Level"
@@ -159,7 +159,7 @@ const Form = () => {
                             listMode="SCROLLVIEW"
                         />
                     </View>
-                    <View className="gap-2" style={{ zIndex: 70, overflow: 'visible' }}>
+                    <View className="gap-2" style={{ zIndex: 1000, overflow: 'visible' }}>
                         <Text className="font-bold">Match Preference</Text>
                         <DropDownPicker
                             placeholder="Match Preference"
@@ -176,7 +176,7 @@ const Form = () => {
                             listMode="SCROLLVIEW"
                         />
                     </View>
-                    <View className="gap-2 mb-4" style={{ zIndex: 60, overflow: 'visible' }}>
+                    <View className="gap-2 mb-4" style={{ zIndex: 900, overflow: 'visible' }}>
                         <Text className="font-bold">University</Text>
                         <DropDownPicker
                             placeholder="Select your university"
@@ -195,7 +195,7 @@ const Form = () => {
                             listMode="SCROLLVIEW"
                         />
                     </View>
-                    <View className="gap-2 mb-4" style={{ zIndex: 50, overflow: 'visible' }}>
+                    <View className="gap-2 mb-4" style={{ zIndex: 800, overflow: 'visible' }}>
                         <Text className="font-bold">Major</Text>
                         <DropDownPicker
                             placeholder="Select your major"

@@ -14,6 +14,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
     bio: undefined,
     university: undefined,
     studyPreferences: { yearLevel: '', preferredTime: '', accountabilityLevel: '', matchPreference: '' },
+    matchedBuddy: undefined,
 
     setUsername: (username) => set({ username }),
     setFullName: (fullName) => set({ fullName }),
@@ -40,6 +41,8 @@ export const useProfileStore = create<ProfileState>((set) => ({
         set((state) => ({
             studyPreferences: { ...state.studyPreferences, yearLevel },
         })),
+    setMatchedBuddy: (buddy) => set({ matchedBuddy: buddy }),
+    resetBuddy: () => set({ matchedBuddy: undefined }),
 
     resetProfile: () =>
         set({
@@ -51,5 +54,6 @@ export const useProfileStore = create<ProfileState>((set) => ({
             bio: undefined,
             university: undefined,
             studyPreferences: { yearLevel: '', preferredTime: '', accountabilityLevel: '', matchPreference: '' },
+            matchedBuddy: undefined,
         }),
 }));

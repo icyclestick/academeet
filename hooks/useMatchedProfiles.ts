@@ -1,20 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useChatContext } from 'stream-chat-expo'; // adjust if you use a different Stream Chat hook
-import { supabase } from '@/lib/supabase'; // adjust the import to your supabase client location
-
-// Type for user profile, adjust fields as needed
-type UserProfile = {
-  full_name?: string;
-  id: string;
-  username?: string;
-  avatar_url?: string;
-  // ...add more fields as your profiles table defines
-};
+import { useChatContext } from 'stream-chat-expo'; 
+import { supabase } from '@/lib/supabase'; 
+import type { UserProfile } from '@/types/Supabase';
 
 export function useMatchedProfiles(currentUserId: string) {
-  const { client } = useChatContext(); // get stream chat client
+  const { client } = useChatContext(); 
   const [matchedProfiles, setMatchedProfiles] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,7 +37,7 @@ export function useMatchedProfiles(currentUserId: string) {
           .select('*')
           .in('id', otherUserIds);
         if (supaError) throw supaError;
-        setMatchedProfiles(data || []);
+        setMatchedProfiles((data || []) as UserProfile[]);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch matches');
       } finally {

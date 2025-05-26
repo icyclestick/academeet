@@ -17,6 +17,7 @@ module.exports = {
           100: "#8b98b0",
           200: "#96a1b7",
         },
+        blueStroke: "#3C2568",
         englishViolet: "#503e74",
         eerieBlack: "#222527",
         night: "#171516",

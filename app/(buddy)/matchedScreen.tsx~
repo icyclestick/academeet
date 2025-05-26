@@ -4,7 +4,7 @@ import {View, Text, Image, TouchableOpacity, Alert} from "react-native";
 import {supabase} from "@/lib/supabase";
 import { router } from 'expo-router';
 import { useProfileStore } from '@/stores/profileStore';
-import { useEffect } from 'react';
+import { React } from 'react';
 
 const MatchedScreen = () => {
     const { profile, session } = useAuth();
@@ -13,7 +13,7 @@ const MatchedScreen = () => {
     const resetBuddy = useProfileStore((state) => state.resetBuddy);
 
     // Set buddy state when matchedProfiles is loaded
-    useEffect(() => {
+    React.useEffect(() => {
         if (matchedProfiles && matchedProfiles.length > 0) {
             setMatchedBuddy(matchedProfiles[0]);
         }
@@ -26,17 +26,14 @@ const MatchedScreen = () => {
             [
                 { text: "Cancel", style: "cancel" },
                 { text: "Unmatch", style: "destructive", onPress: async () => {
+                    // Remove match in Supabase (adjust table/column names as needed)
                     if (session?.user?.id) {
-                        // Delete all matches where the user is either user_id or buddy_id
-                        await supabase
-                            .from('matches')
-                            .delete()
-                            .or(`user_id.eq.${session.user.id},buddy_id.eq.${session.user.id}`);
+                        await supabase.from('matches').delete().eq('user_id', session.user.id);
                     }
                     // Reset matched buddy state in your store
                     resetBuddy();
                     // Redirect to quiz (or waiting room if you prefer)
-                    router.replace('/(buddy)/quiz/form');
+                    router.replace('/(buddy)/quiz');
                 }}
             ]
         );

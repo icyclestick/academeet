@@ -13,7 +13,11 @@ export interface ProfileState {
     avatarUrl?: string;
     bio?: string;
     university?: string;
-    studyPreferences: StudyPreferences;  // This should be non-optional
+    studyPreferences: StudyPreferences;
+
+    matchedBuddy?: any;
+    setMatchedBuddy: (buddy: any) => void;
+    resetBuddy: () => void;
 
     setUsername: (username: string) => void;
     setFullName: (fullName: string) => void;
@@ -21,13 +25,9 @@ export interface ProfileState {
     setAvatarUrl: (avatarUrl: string) => void;
     setBio: (bio: string) => void;
     setUniversity: (university: string) => void;
-
     setStudyPreferences: (prefs: StudyPreferences) => void;
     setPreferredTime: (time: string) => void;
     setAccountabilityLevel: (level: string) => void;
     setMatchPreference: (preference: string) => void;
-    setYearLevel: (yearLevel: string) => void;
-
     resetProfile: () => void;
 }
-

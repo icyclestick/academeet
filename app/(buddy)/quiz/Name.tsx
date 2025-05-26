@@ -18,6 +18,10 @@ const UpdateProfilePage = () => {
             Alert.alert("Error", "Full Name and Username are required");
             return;
         }
+        if (!session || !session.user?.id) {
+            Alert.alert("Error", "Session expired. Please log in again.");
+            return;
+        }
 
         try {
             setLoading(true);
