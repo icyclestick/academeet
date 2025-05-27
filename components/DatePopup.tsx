@@ -1,9 +1,9 @@
 import React, { useState } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, TextInput } from "react-native"
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View, Animated, Pressable, ScrollView, TextInput } from "react-native"
 import { Ellipsis } from "lucide-react-native"
 import type { CalendarEntry } from "@/types/calendar"
 
-// Get screen dimensions and compute popup bounds
+// Get screen dimensions and compute popup bounds 
 const screenWidth = Dimensions.get("window").width
 const screenHeight = Dimensions.get("window").height
 const popupWidth = Math.min(261, screenWidth * 0.9)
@@ -16,7 +16,7 @@ interface DatePopupProps {
   date: string | null
   position: { top: number; left: number }
   events: CalendarEntry[]
-  tasks: CalendarEntry[]
+  tasks: CalendarEntry[] 
   onAddEntry: (calendar_name: string, entry_type: 'event' | 'task') => Promise<void>
   onClose: () => void
 }
@@ -24,8 +24,6 @@ interface DatePopupProps {
 const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, tasks, onAddEntry, onClose }) => {
   if (!visible) return null
 
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const formatDate = (dateString: string) => {
@@ -97,12 +95,26 @@ const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, 
   return (
     <>
       {/* Background overlay */}
-      <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1} />
+      <TouchableOpacity style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.1)", zIndex: 999 }} onPress={onClose} activeOpacity={1} />
 
       {/* Popup */}
       <View
         style={[
-          styles.popup,
+          {
+            position: "absolute",
+            backgroundColor: "white",
+            borderRadius: 15,
+            padding: 14,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
+            elevation: 8,
+            overflow: "hidden",
+            zIndex: 1000,
+            borderWidth: 1,
+            borderColor: "#E5E5E5",
+          },
           {
             top: adjustedPosition.top,
             left: adjustedPosition.left,
@@ -111,205 +123,79 @@ const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, 
           },
         ]}
       >
-        <View style={styles.header}>
-          <Text style={styles.dateText}>{formatDate(date as string)}</Text>
-          <TouchableOpacity style={styles.menuButton} onPress={onClose}>
+        <View className="flex-row justify-between items-center mb-3">
+          <Text className="text-base text-gray-500 font-bold flex-1">{formatDate(date as string)}</Text>
+          <TouchableOpacity className="p-1 rounded" onPress={onClose}>
             <Ellipsis size={20} color="#666" />
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>EVENTS</Text>
-            {events && events.length > 0 ? (
-              events.map((event, index) => (
-                <View key={`event-${index}`} style={styles.itemContainer}>
-                  <View style={styles.purpleBar} />
-                  <Text style={styles.itemText}>{event.name}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>No events</Text>
-            )}
-          </View>
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          <View className="flex-1">
+            <View className="mb-5">
+              <Text className="text-xl font-bold text-gray-800 mb-3 tracking-wide">EVENTS</Text>
+              {events && events.length > 0 ? (
+                events.map((event, index) => (
+                  <View key={`event-${index}`} className="flex-row items-center mb-2 py-1">
+                    <View style={{ width: 4, height: 16, backgroundColor: '#503E74', marginRight: 10, borderRadius: 2 }} />
+                    <Text className="text-sm text-gray-800 flex-1 leading-[18px]">{event.calendar_name}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text className="text-sm text-gray-400 italic ml-3">No events</Text>
+              )}
+            </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>TASKS</Text>
-            {tasks && tasks.length > 0 ? (
-              tasks.map((task, index) => (
-                <View key={`task-${index}`} style={styles.itemContainer}>
-                  <View style={styles.purpleBar} />
-                  <Text style={styles.itemText}>{task.name}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>No tasks</Text>
-            )}
+            <View className="mb-5">
+              <Text className="text-xl font-bold text-gray-800 mb-3 tracking-wide">TASKS</Text>
+              {tasks && tasks.length > 0 ? (
+                tasks.map((task, index) => (
+                  <View key={`task-${index}`} className="flex-row items-center mb-2 py-1">
+                    <View style={{ width: 4, height: 16, backgroundColor: '#503E74', marginRight: 10, borderRadius: 2 }} />
+                    <Text className="text-sm text-gray-800 flex-1 leading-[18px]">{task.calendar_name}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text className="text-sm text-gray-400 italic ml-3">No tasks</Text>
+              )}
+            </View>
           </View>
         </ScrollView>
 
-        <View className="flex-col gap-2">
-          {/* Input for event/task name */}
+        {/* Add Event Section */}
+        <View className="mt-4">
+          <Text className="text-base font-medium text-gray-800 mb-2">Add Event</Text>
           <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter event or task name"
-            style={{
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 5,
-              padding: 8,
-              marginVertical: 8,
-              backgroundColor: "#fff",
-              color: "#222"
+            className="border border-gray-300 rounded p-2 mb-3 bg-white text-gray-800"
+            placeholder="Enter event name"
+            onSubmitEditing={(e) => {
+              onAddEntry(e.nativeEvent.text, 'event');
             }}
           />
-          <TouchableOpacity 
-              style={[styles.addButton, !name?.trim() && { opacity: 0.5 }]}
-              disabled={!name?.trim() || loading}
-              onPress={async () => {
-                if (!name?.trim()) return;
-                setLoading(true);
-                setError(null);
-                try {
-                  await onAddEntry(name.trim(), "event");
-                  setName("");
-                } catch (e) {
-                  setError("Failed to add event.");
-                } finally {
-                  setLoading(false);
-                }
-              }}
-          >
-            <Text className="text-sm text-black font-semibold">Add Event</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-              style={[styles.addButton, !name?.trim() && { opacity: 0.5 }]}
-              disabled={!name?.trim() || loading}
-              onPress={async () => {
-                if (!name?.trim()) return;
-                setLoading(true);
-                setError(null);
-                try {
-                  await onAddEntry(name.trim(), "task");
-                  setName("");
-                } catch (e) {
-                  setError("Failed to add task.");
-                  console.log("Add entry error:", e);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-          >
-            <Text className="text-sm text-black font-semibold">Add Task</Text>
-          </TouchableOpacity>
         </View>
-        {loading && <Text style={{ color: 'gray', marginTop: 4 }}>Adding...</Text>}
-        {error && <Text style={{ color: 'red', marginTop: 4 }}>{error}</Text>}
+        
+        {/* Add Task Section */}
+        <View className="mt-2">
+          <Text className="text-base font-medium text-gray-800 mb-2">Add Task</Text>
+          <TextInput
+            className="border border-gray-300 rounded p-2 mb-3 bg-white text-gray-800"
+            placeholder="Enter task name"
+            onSubmitEditing={(e) => {
+              onAddEntry(e.nativeEvent.text, 'task');
+            }}
+          />
+        </View>
+        
+        {error && <Text className="text-red-500 mt-2 text-center">{error}</Text>}
       </View>
     </>
   )
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
-    zIndex: 999,
-  },
-  popup: {
-    position: "absolute",
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 1000,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  dateText: {
-    fontSize: 16,
-    color: "#666",
-    fontWeight: "500",
-    flex: 1,
-  },
   menuButton: {
     padding: 4,
     borderRadius: 4,
-  },
-  scrollContainer: {
-    flex: 1,
-    maxHeight: popupHeight - 120, // Account for header and buttons
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  itemContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    paddingVertical: 2,
-  },
-  purpleBar: {
-    width: 3,
-    height: 16,
-    backgroundColor: "#503E74",
-    marginRight: 10,
-    borderRadius: 1.5,
-  },
-  itemText: {
-    fontSize: 14,
-    color: "#333",
-    flex: 1,
-    lineHeight: 18,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#999",
-    fontStyle: "italic",
-    marginLeft: 13,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    gap: 8,
-  },
-  addButton: {
-    backgroundColor: "#F8F9FA",
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    flex: 1,
-  },
-  buttonText: {
-    fontSize: 13,
-    color: "#495057",
-    fontWeight: "500",
   },
 })
 

@@ -67,7 +67,7 @@ async function addEvent({
   calendar_name: string;
   date: string;
   entry_type: 'event' | 'task';
-}): Promise<void> {
+}): Promise<any> {
   try {
     // Create a clean object with only the fields we want
     const insertObj: any = {
@@ -131,7 +131,7 @@ function transformEventsToMarkedDates(events: CalendarEntry[], selectedDate: str
   return marked;
 }
 
-export default function Index() {
+function Index() {
   const { profile } = useAuth();
   const userId = profile?.id as string | undefined;
   const [matchIds, setMatchIds] = useState<number[]>([]);
@@ -316,3 +316,5 @@ export default function Index() {
     </SafeAreaView>
   );
 }
+
+export default Index;
