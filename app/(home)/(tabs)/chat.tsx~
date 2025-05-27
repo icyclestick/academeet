@@ -9,14 +9,7 @@ import { supabase } from "@/lib/supabase";
 
 const screenWidth = Dimensions.get("window").width;
 
-type SidebarProps = {
-    visible: boolean;
-    onClose: () => void;
-    events: any[]; 
-    tasks: any[];  
-};
-
-const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) => {
+const Sidebar = ({ visible, onClose, events, tasks }) => {
     const slideAnim = useRef(new Animated.Value(screenWidth)).current;
     
     useEffect(() => {
@@ -32,15 +25,12 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
             position: 'absolute',
             top: 0,
             right: 0,
-            width: screenWidth * 0.85,
             height: '100%',
+            width: '70%',
             backgroundColor: '#F7F6FB',
+            borderLeftWidth: 1,
+            borderLeftColor: '#ddd',
             zIndex: 100,
-            elevation: 10,
-            shadowColor: '#000',
-            shadowOffset: { width: -2, height: 0 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
             transform: [{ translateX: slideAnim }],
         }}>
             <SafeAreaView style={{ flex: 1 }}>
@@ -69,13 +59,10 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
                                     <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
                                         {e.match_id ? 'With Buddy' : 'Personal'}
                                     </Text>
-                                    <Text style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
-                                        {e.date ? new Date(e.date).toLocaleDateString() : ''}
-                                    </Text>
                                 </View>
                             ))
                         ) : (
-                            <Text style={{ color: '#888', marginBottom: 16 }}>No events</Text>
+                            <Text style={{ color: '#888', marginBottom: 16 }}>No events for this date</Text>
                         )}
                         
                         {/* Tasks List */}
@@ -94,13 +81,10 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
                                     <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
                                         {t.match_id ? 'With Buddy' : 'Personal'}
                                     </Text>
-                                    <Text style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
-                                        {t.date ? new Date(t.date).toLocaleDateString() : ''}
-                                    </Text>
                                 </View>
                             ))
                         ) : (
-                            <Text style={{ color: '#888' }}>No tasks</Text>
+                            <Text style={{ color: '#888' }}>No tasks for this date</Text>
                         )}
                     </ScrollView>
                 </View>
@@ -109,6 +93,62 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
     );
 };
 
+// Date Selector Component
+const DateSelector = ({ selectedDate, onDateChange }) => {
+    // Generate an array of dates (7 days before and after the selected date)
+    const dates = [];
+    const selected = new Date(selectedDate);
+    
+    for (let i = -7; i <= 7; i++) {
+        const date = new Date(selected);
+        date.setDate(date.getDate() + i);
+        dates.push(date);
+    }
+    
+    return (
+        <View>
+            <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingVertical: 10 }}
+            >
+                {dates.map((date, index) => {
+                    const dateString = date.toISOString().split('T')[0];
+                    const isSelected = dateString === selectedDate;
+                    const isToday = dateString === new Date().toISOString().split('T')[0];
+                    
+                    return (
+                        <TouchableOpacity
+                            key={index}
+                            style={{
+                                padding: 10,
+                                marginHorizontal: 4,
+                                backgroundColor: isSelected ? '#503E74' : (isToday ? '#f0f0f0' : 'transparent'),
+                                borderRadius: 8,
+                                alignItems: 'center',
+                                minWidth: 45,
+                            }}
+                            onPress={() => onDateChange(dateString)}
+                        >
+                            <Text style={{ 
+                                color: isSelected ? 'white' : 'black',
+                                fontWeight: isToday ? 'bold' : 'normal'
+                            }}>
+                                {date.getDate()}
+                            </Text>
+                            <Text style={{ 
+                                fontSize: 12,
+                                color: isSelected ? 'white' : '#666'
+                            }}>
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </ScrollView>
+        </View>
+    );
+};
 
 const Chat = () => {
     const { user } = useAuth();
@@ -119,6 +159,8 @@ const Chat = () => {
     const [showSidebar, setShowSidebar] = useState(false);
     const [events, setEvents] = useState([]);
     const [tasks, setTasks] = useState([]);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [isLoadingCalendar, setIsLoadingCalendar] = useState(false);
     const userId = user?.id;
 
     useEffect(() => {
@@ -238,7 +280,7 @@ const Chat = () => {
                         <MessageInput />
                     </View>
                 </Channel>
-                <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} events={events} tasks={tasks} />
+                <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} events={events} tasks={tasks} onDateChange={(date) => setSelectedDate(date)} />
             </View>
         </>
     );

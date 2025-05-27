@@ -22,6 +22,7 @@ async function fetchMatchIds(userId: string): Promise<number[]> {
 async function fetchEvents(userId: string, matchIds: number[]): Promise<CalendarEntry[]> {
   try {
     // Build query for user's personal events
+    console.log("Fetching events for user:", userId);
     let query = supabase
       .from("calendars")
       .select("*")
@@ -111,22 +112,29 @@ async function addEvent({
 // Transform events to markedDates
 function transformEventsToMarkedDates(events: CalendarEntry[], selectedDate: string | null): MarkedDates {
   const marked: MarkedDates = {};
+  
   events.forEach((event: CalendarEntry) => {
-    const dateStr = event.date;
-    marked[dateStr] = {
-      customStyles: {
-        container: {
-          borderBottomWidth: 4,
-          borderBottomColor: event.calendar_type === "personal" ? "#503E74" : "#3EA16C",
-          backgroundColor: dateStr === selectedDate ? "rgba(80, 62, 116, 0.3)" : "transparent",
-          borderRadius: dateStr === selectedDate ? 5 : 0,
+    if (!event.date) return;
+    
+    // Normalize date format to YYYY-MM-DD
+    const dateStr = event.date.split('T')[0];
+    
+    if (!marked[dateStr]) {
+      marked[dateStr] = {
+        customStyles: {
+          container: {
+            borderBottomWidth: 4,
+            borderBottomColor: event.calendar_type === "personal" ? "#503E74" : "#3EA16C",
+            backgroundColor: dateStr === selectedDate ? "rgba(80, 62, 116, 0.3)" : "transparent",
+            borderRadius: dateStr === selectedDate ? 5 : 0,
+          },
+          text: {
+            fontWeight: "bold",
+            color: "#EDE8E2",
+          },
         },
-        text: {
-          fontWeight: "bold",
-          color: "#EDE8E2",
-        },
-      },
-    };
+      };
+    }
   });
   return marked;
 }
@@ -138,6 +146,7 @@ function Index() {
   const [events, setEvents] = useState<CalendarEntry[]>([]);
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showPopup, setShowPopup] = useState<boolean>(false);
   const [popupPosition, setPopupPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
@@ -145,8 +154,10 @@ function Index() {
   useEffect(() => {
     if (!userId) return;
     (async () => {
+      setIsLoading(true);
       const ids = await fetchMatchIds(userId);
       setMatchIds(ids);
+      setIsLoading(false);
     })();
   }, [userId]);
 
@@ -154,25 +165,30 @@ function Index() {
   useEffect(() => {
     if (!userId) {
       console.log("No userId available, skipping event fetch");
+      setEvents([]);
       return;
     }
     (async () => {
+      setIsLoading(true);
       const allEvents = await fetchEvents(userId, matchIds);
+      console.log("Fetched events:", allEvents);
       setEvents(allEvents);
-      setMarkedDates(transformEventsToMarkedDates(allEvents, selectedDate));
+      const marked = transformEventsToMarkedDates(allEvents, selectedDate);
+      setMarkedDates(marked);
+      setIsLoading(false);
     })();
-  }, [userId, matchIds, selectedDate]);
+  }, [userId, matchIds]);
 
   // Debug logs for event filtering
   console.log("All events:", events);
   console.log("Selected date:", selectedDate);
 
   // Separate events and tasks for the selected date (robust date matching)
-  const eventsForDate: CalendarEntry[] = events.filter(ev =>
-    ev.date && selectedDate && ev.date.startsWith(selectedDate) && ev.entry_type === "event"
+  const eventsForDate: CalendarEntry[] = events.filter(ev => 
+    ev.date && selectedDate && ev.date.split('T')[0] === selectedDate && ev.entry_type === "event"
   );
   const tasksForDate: CalendarEntry[] = events.filter(ev =>
-    ev.date && selectedDate && ev.date.startsWith(selectedDate) && ev.entry_type === "task"
+    ev.date && selectedDate && ev.date.split('T')[0] === selectedDate && ev.entry_type === "task"
   );
 
   // Log filtered events and tasks for the selected date
@@ -183,6 +199,9 @@ function Index() {
   const onDayPress = useCallback((day: { dateString: string }) => {
     setSelectedDate(day.dateString);
     setShowPopup(true);
+    
+    // Update marked dates to highlight the selected date
+    setMarkedDates(transformEventsToMarkedDates(events, day.dateString));
   }, []);
 
   // Handle adding a new event or task (personal, for home tab)
@@ -201,10 +220,14 @@ function Index() {
       console.error("Failed to add event/task:", err);
     } finally {
       // Always refetch events after attempting add
+      setIsLoading(true);
       const allEvents = await fetchEvents(userId!, matchIds);
       console.log("Fetched events after add:", allEvents);
       setEvents(allEvents);
       setMarkedDates(transformEventsToMarkedDates(allEvents, selectedDate));
+      setIsLoading(false);
+
+      // Close popup
       setShowPopup(false);
     }
   };
@@ -236,8 +259,8 @@ function Index() {
       </View>
       {showPopup && (
         <DatePopup
-          visible={true}
-          date={selectedDate}
+          visible={showPopup}
+          date={selectedDate.toString()}
           position={popupPosition}
           events={eventsForDate}
           tasks={tasksForDate}
@@ -313,6 +336,12 @@ function Index() {
           </Text>
         </View>
       </View>
+      {/* Loading indicator */}
+      {isLoading && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)' }}>
+          <Text style={{ backgroundColor: 'white', padding: 10, borderRadius: 5 }}>Loading...</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

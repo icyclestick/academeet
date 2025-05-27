@@ -162,30 +162,6 @@ const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, 
           </View>
         </ScrollView>
 
-        {/* Add Event Section */}
-        <View className="mt-4">
-          <Text className="text-base font-medium text-gray-800 mb-2">Add Event</Text>
-          <TextInput
-            className="border border-gray-300 rounded p-2 mb-3 bg-white text-gray-800"
-            placeholder="Enter event name"
-            onSubmitEditing={(e) => {
-              onAddEntry(e.nativeEvent.text, 'event');
-            }}
-          />
-        </View>
-        
-        {/* Add Task Section */}
-        <View className="mt-2">
-          <Text className="text-base font-medium text-gray-800 mb-2">Add Task</Text>
-          <TextInput
-            className="border border-gray-300 rounded p-2 mb-3 bg-white text-gray-800"
-            placeholder="Enter task name"
-            onSubmitEditing={(e) => {
-              onAddEntry(e.nativeEvent.text, 'task');
-            }}
-          />
-        </View>
-        
         {error && <Text className="text-red-500 mt-2 text-center">{error}</Text>}
       </View>
     </>
