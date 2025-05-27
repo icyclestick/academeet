@@ -1,212 +1,275 @@
 import { Dimensions, Image, SafeAreaView, Text, View } from "react-native";
 import { Calendar } from 'react-native-calendars';
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import DatePopup from "@/components/DatePopup";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/providers/AuthProviders";
+import type { CalendarEntry } from "@/types/calendar";
 
-const { width } = Dimensions.get('window');
+type MarkedDates = { [date: string]: any };
+
+// Fetch all match IDs for the user
+async function fetchMatchIds(userId: string): Promise<number[]> {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("id")
+    .or(`user1.eq.${userId},user2.eq.${userId}`);
+  if (error) throw error;
+  return data ? data.map(row => row.id) : [];
+}
+
+// Fetch all events for the user (personal + shared)
+async function fetchEvents(userId: string, matchIds: number[]): Promise<CalendarEntry[]> {
+  const { data, error } = await supabase
+    .from("calendars")
+    .select("*")
+    .or([
+      `user_id.eq.${userId}`,
+      matchIds.length > 0 ? `match_id.in.(${matchIds.join(",")})` : "match_id.eq.null"
+    ].join(","));
+  if (error) throw error;
+  return data || [];
+}
+
+// Add new event or task
+async function addEvent({
+  calendar_type,
+  user_id,
+  match_id,
+  calendar_name,
+  date,
+  entry_type,
+}: {
+  calendar_type: string;
+  user_id: string;
+  match_id?: number | null;
+  calendar_name: string;
+  date: string;
+  entry_type: 'event' | 'task';
+}): Promise<void> {
+  const insertObj: any = {
+    calendar_type,
+    user_id,
+    calendar_name,
+    date,
+    entry_type
+  };
+  // Only include match_id if it is a valid number (not null or undefined)
+  if (typeof match_id === 'number') {
+    insertObj.match_id = match_id;
+  }
+  // Defensive: Remove all null/undefined fields from insertObj
+  Object.keys(insertObj).forEach(
+    (key) => (insertObj[key] === null || insertObj[key] === undefined) && delete insertObj[key]
+  );
+  // Log the object you are about to insert
+  console.log("Inserting into calendars:", insertObj);
+  const { error } = await supabase.from("calendars").insert([insertObj]);
+  if (error) throw error;
+}
+
+// Transform events to markedDates
+function transformEventsToMarkedDates(events: CalendarEntry[], selectedDate: string | null): MarkedDates {
+  const marked: MarkedDates = {};
+  events.forEach((event: CalendarEntry) => {
+    const dateStr = event.date;
+    marked[dateStr] = {
+      customStyles: {
+        container: {
+          borderBottomWidth: 4,
+          borderBottomColor: event.calendar_type === "personal" ? "#503E74" : "#3EA16C",
+          backgroundColor: dateStr === selectedDate ? "rgba(80, 62, 116, 0.3)" : "transparent",
+          borderRadius: dateStr === selectedDate ? 5 : 0,
+        },
+        text: {
+          fontWeight: "bold",
+          color: "#EDE8E2",
+        },
+      },
+    };
+  });
+  return marked;
+}
 
 export default function Index() {
-    interface DateData {
-        dateString: string; // "YYYY-MM-DD"
-        day: number; // Day of the month
-        month: number; // Month (1-12)
-        year: number; // Year
-        timestamp: number; // Unix timestamp
+  const { profile } = useAuth();
+  const userId = profile?.id as string | undefined;
+  const [matchIds, setMatchIds] = useState<number[]>([]);
+  const [events, setEvents] = useState<CalendarEntry[]>([]);
+  const [markedDates, setMarkedDates] = useState<MarkedDates>({});
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showPopup, setShowPopup] = useState<boolean>(false);
+  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  // Fetch matchIds when userId changes
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const ids = await fetchMatchIds(userId);
+      setMatchIds(ids);
+    })();
+  }, [userId]);
+
+  // Fetch events when userId or matchIds change
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const allEvents = await fetchEvents(userId, matchIds);
+      setEvents(allEvents);
+      setMarkedDates(transformEventsToMarkedDates(allEvents, selectedDate));
+    })();
+  }, [userId, matchIds, selectedDate]);
+
+  // Debug logs for event filtering
+  console.log("All events:", events);
+  console.log("Selected date:", selectedDate);
+
+  // Separate events and tasks for the selected date (robust date matching)
+  const eventsForDate: CalendarEntry[] = events.filter(ev =>
+    ev.date && selectedDate && ev.date.startsWith(selectedDate) && ev.entry_type === "event"
+  );
+  const tasksForDate: CalendarEntry[] = events.filter(ev =>
+    ev.date && selectedDate && ev.date.startsWith(selectedDate) && ev.entry_type === "task"
+  );
+
+  // Log filtered events and tasks for the selected date
+  console.log("eventsForDate:", eventsForDate);
+  console.log("tasksForDate:", tasksForDate);
+
+  // Handle day press
+  const onDayPress = useCallback((day: { dateString: string }) => {
+    setSelectedDate(day.dateString);
+    setShowPopup(true);
+  }, []);
+
+  // Handle adding a new event or task (personal, for home tab)
+  const handleAddPersonalEntry = async (calendar_name: string, entry_type: 'event' | 'task') => {
+    let addError = null;
+    try {
+      await addEvent({
+        calendar_type: "personal",
+        user_id: userId!, // forced, since personal events only allowed if logged in
+        calendar_name,
+        date: selectedDate!,
+        entry_type
+      });
+    } catch (err) {
+      addError = err;
+      console.error("Failed to add event/task:", err);
+    } finally {
+      // Always refetch events after attempting add
+      const allEvents = await fetchEvents(userId!, matchIds);
+      console.log("Fetched events after add:", allEvents);
+      setEvents(allEvents);
+      setMarkedDates(transformEventsToMarkedDates(allEvents, selectedDate));
+      setShowPopup(false);
     }
+  };
 
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [popupPosition, setPopupPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const handleClosePopup = () => {
+    setSelectedDate(null);
+    setShowPopup(false);
+  };
 
-    // Mock data for demonstration
-    const mockData: { [key: string]: { events: string[]; tasks: string[] } } = {
-        '2025-03-01': {
-            events: ['New Year’s Day', 'Shift Out Onboarding'],
-            tasks: ['Study Session with Kurt', 'DesAlgo Project Proposal', 'Review for Departmentals'],
-        },
-
-        '2025-03-10': {
-            events: ['New Year’s Day', 'Shift Out Onboarding'],
-            tasks: ['Study Session with Kurt', 'DesAlgo Project Proposal', 'Review for Departmentals'],
-        },
-
-        '2025-03-22': {
-            events: ['New Year’s Day', 'Shift Out Onboarding'],
-            tasks: ['Study Session with Kurt', 'DesAlgo Project Proposal', 'Review for Departmentals'],
-        },
-
-        '2025-03-11': {
-            events: ['New Year’s Day', 'Shift Out Onboarding'],
-            tasks: ['Study Session with Kurt', 'DesAlgo Project Proposal', 'Review for Departmentals'],
-        },
-        // Add more dates and their corresponding events and tasks here
-    };
-
-
-    const markedDates = Object.keys(mockData).reduce((acc, date) => {
-        acc[date] = {
-          customStyles: {
-            container: {
-              borderBottomWidth: 4,
-              borderBottomColor: '#503E74',
-              borderBottomLeftRadius: 0,
-              borderBottomRightRadius: 0,
-              paddingBottom: 2,
-              backgroundColor: 'transparent', // default transparent
-            },
-            text: {
-              fontWeight: 'bold',
-              color: '#EDE8E2',
-              marginBottom: -4,
-            },
-          },
-        };
-        return acc;
-      }, {} as { [date: string]: any });
-      
-      // Add style for selectedDate with transparent colored background:
-      if (selectedDate) {
-        markedDates[selectedDate] = {
-          ...(markedDates[selectedDate] || {}),
-          customStyles: {
-            ...(markedDates[selectedDate]?.customStyles || {}),
-            container: {
-              ...(markedDates[selectedDate]?.customStyles?.container || {}),
-              backgroundColor: 'rgba(80, 62, 116, 0.3)', // semi-transparent purple-ish color
-              borderRadius: 5, // rounded edges around date
+  return (
+    <SafeAreaView className="flex-1 justify-center items-center bg-isabelline gap-4">
+      <Image
+        source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
+        className="w-36 h-10 bg-gray-300 rounded-lg self-start ml-6"
+        resizeMode="cover"
+      />
+      <View className="flex-row w-3/4 h-40 bg-olivine rounded-lg items-center justify-center p-3">
+        <View className="flex-1">
+          <Text className="text-white font-bold text-2xl">Hello, Kurt!</Text>
+          <Text className="text-white text-xs">
+            Ready to hit the books and meet your perfect study buddy?
+          </Text>
+        </View>
+        <Image
+          source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
+          className="w-24 h-24 bg-gray-300 rounded-lg"
+          resizeMode="cover"
+        />
+      </View>
+      {showPopup && (
+        <DatePopup
+          visible={true}
+          date={selectedDate}
+          position={popupPosition}
+          events={eventsForDate}
+          tasks={tasksForDate}
+          onAddEntry={handleAddPersonalEntry}
+          onClose={handleClosePopup}
+        />
+      )}
+      <Calendar
+        showSixWeeks={true}
+        style={{
+          backgroundColor: "#96a1b7",
+          borderRadius: 10,
+          padding: 5,
+          height: 320,
+          width: 300,
+          margin: 0,
+        }}
+        theme={{
+          "stylesheet.day.basic": {
+            base: {
+              height: 25,
+              width: 30,
+              alignItems: "center",
+              justifyContent: "center",
             },
           },
-        };
-      }
-      
-      
-      
-      
-
-    const handleDayLongPress = (day: { dateString: string; day: number; month: number; year: number }) => {
-        const firstDayOfMonth = new Date(day.year, day.month - 1, 1);
-        const firstDayWeekday = firstDayOfMonth.getDay(); // 0 (Sunday) to 6 (Saturday)
-        const dateIndex = firstDayWeekday + (day.day - 1);
-        const row = Math.floor(dateIndex / 7);
-        const column = dateIndex % 7;
-
-        const cellWidth = 30; // Adjust based on your calendar's cell width
-        const cellHeight = 30; // Adjust based on your calendar's cell height
-        const calendarX = 20; // X position of the calendar on the screen
-        const calendarY = 100; // Y position of the calendar on the screen
-
-        const left = calendarX + column * cellWidth;
-        const top = calendarY + row * cellHeight;
-
-        setSelectedDate(day.dateString);
-        setPopupPosition({ top, left });
-    };
-
-    const handleClosePopup = () => {
-        setSelectedDate(null);
-    };
-
-    return (
-        <SafeAreaView className="flex-1 justify-center items-center bg-isabelline gap-4">
+          calendarBackground: "#96a1b7",
+          textSectionTitleColor: "#EDE8E2",
+          selectedDayBackgroundColor: "#A3AC74",
+          selectedDayTextColor: "#FFFFFF",
+          todayTextColor: "#FFFFFF",
+          dayTextColor: "#EDE8E2",
+          textDisabledColor: "#C7C3BC",
+          arrowColor: "#EDE8E2",
+          monthTextColor: "#FFFFFF",
+          textDayFontSize: 12,
+          textMonthFontSize: 14,
+          textDayHeaderFontSize: 12,
+          textMonthFontWeight: "700",
+          textDayFontWeight: "bold",
+          textDayStyle: { lineHeight: 16 },
+          textSectionTitleStyle: { fontSize: 12 },
+        }}
+        markingType="custom"
+        markedDates={markedDates}
+        onDayPress={onDayPress}
+      />
+      <View className="flex-row space-x-4 mt-4 gap-2">
+        <View className="w-44 h-32 bg-jasmine rounded-lg justify-center p-3">
+          <View className="flex-row items-center gap-2">
             <Image
-                source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
-                className="w-36 h-10 bg-gray-300 rounded-lg self-start ml-6"
-                resizeMode="cover"
+              source={{ uri: "https://via.placeholder.com/80" }}
+              className="w-10 h-10 bg-gray-300 rounded-lg"
+              resizeMode="cover"
             />
-            <View className="flex-row w-3/4 h-40 bg-olivine rounded-lg items-center justify-center p-3">
-                <View className="flex-1">
-                    <Text className="text-white font-bold text-2xl">Hello, Kurt!</Text>
-                    <Text className="text-white text-xs">
-                        Ready to hit the books and meet your perfect study buddy?
-                    </Text>
-                </View>
-
-                <Image
-                    source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
-                    className="w-24 h-24 bg-gray-300 rounded-lg"
-                    resizeMode="cover"
-                />
-            </View>
-            {selectedDate && (
-                <DatePopup
-                    visible={true}
-                    date={selectedDate}
-                    position={popupPosition}
-                    events={mockData[selectedDate]?.events}
-                    tasks={mockData[selectedDate]?.tasks}
-                    onClose={handleClosePopup}
-                />
-            )}
-            <Calendar
-            showSixWeeks={true}
-                style={{
-                    backgroundColor: "#96a1b7",
-                    borderRadius: 10,
-                    padding: 5,
-                    height: 320,
-                    width: 300,
-                    margin: 0,
-                }}
-                theme={{
-                    "stylesheet.day.basic": {
-                        base: {
-                            height: 25, // Adjust cell height
-                            width: 30,  // Adjust cell width
-                            alignItems: "center",
-                            justifyContent: "center",
-                        },
-                    },
-                    calendarBackground: "#96a1b7",
-                    textSectionTitleColor: "#EDE8E2", // Light text for month/weekdays
-                    selectedDayBackgroundColor: "#A3AC74", // Greenish selection
-                    selectedDayTextColor: "#FFFFFF",
-                    todayTextColor: "#FFFFFF",
-                    dayTextColor: "#EDE8E2",
-                    textDisabledColor: "#C7C3BC", // Faded color for disabled days
-                    arrowColor: "#EDE8E2", // White arrows
-                    monthTextColor: "#FFFFFF",
-                    textDayFontSize: 12, // try adjusting to fit inside current setup
-                    textMonthFontSize: 14, // try adjusting to fit inside current setup
-                    textDayHeaderFontSize: 12, // try adjusting to fit inside current setup
-                    textMonthFontWeight: "700",
-                    textDayFontWeight: "bold",
-                    textDayStyle: { lineHeight: 16 },
-                    textSectionTitleStyle: { fontSize: 12 },
-                }}
-                markingType="custom"
-                markedDates={markedDates}
-                onDayPress={(day: DateData) => {
-                    console.log('selected day', day);
-                }}
-                onDayLongPress={handleDayLongPress}
+            <Text className="color-black font-bold">Time</Text>
+          </View>
+          <Text className="color-black text-xs">
+            You focused for 2 hours yesterday! Keep it up! 🎯
+          </Text>
+        </View>
+        <View className="w-44 h-22 bg-jasper rounded-lg justify-center p-3">
+          <View className="flex-row items-center gap-2">
+            <Image
+              source={{ uri: "https://via.placeholder.com/80" }}
+              className="w-10 h-10 bg-gray-300 rounded-lg"
+              resizeMode="cover"
             />
-            <View className="flex-row space-x-4 mt-4 gap-2">
-                <View className="w-44 h-32 bg-jasmine rounded-lg justify-center p-3">
-                    <View className="flex-row items-center gap-2">
-                        <Image
-                            source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
-                            className="w-10 h-10 bg-gray-300 rounded-lg"
-                            resizeMode="cover"
-                        />
-                        <Text className="color-black font-bold">Time</Text>
-                    </View>
-                    <Text className="color-black text-xs">
-                        You focused for 2 hours yesterday! Keep it up! 🎯
-                    </Text>
-                </View>
-                <View className="w-44 h-22 bg-jasper rounded-lg justify-center p-3">
-                    <View className="flex-row items-center gap-2">
-                        <Image
-                            source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
-                            className="w-10 h-10 bg-gray-300 rounded-lg"
-                            resizeMode="cover"
-                        />
-                        <Text className="color-white font-bold">Streak</Text>
-                    </View>
-                    <Text className="color-white text-xs">
-                        You’ve hit a 5-day streak! Keep the fire burning! 🔥
-                    </Text>
-                </View>
-            </View>
-        </SafeAreaView>
-    );
+            <Text className="color-white font-bold">Streak</Text>
+          </View>
+          <Text className="color-white text-xs">
+            You’ve hit a 5-day streak! Keep the fire burning! 🔥
+          </Text>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
 }

@@ -37,10 +37,6 @@ export const useProfileStore = create<ProfileState>((set) => ({
         set((state) => ({
             studyPreferences: { ...state.studyPreferences, matchPreference: preference },
         })),
-    setYearLevel: (yearLevel) =>
-        set((state) => ({
-            studyPreferences: { ...state.studyPreferences, yearLevel },
-        })),
     setMatchedBuddy: (buddy) => set({ matchedBuddy: buddy }),
     resetBuddy: () => set({ matchedBuddy: undefined }),
 

@@ -1,7 +1,6 @@
 import React, { useState } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, TextInput } from "react-native"
 import { Ellipsis } from "lucide-react-native"
-import type { CalendarEntry } from "@/types/calendar"
 
 // Get screen dimensions and compute popup bounds
 const screenWidth = Dimensions.get("window").width
@@ -13,12 +12,12 @@ const DATE_OFFSET = 40 // Minimum distance from the original date position
 
 interface DatePopupProps {
   visible: boolean
-  date: string | null
+  date: string
   position: { top: number; left: number }
-  events: CalendarEntry[]
-  tasks: CalendarEntry[]
-  onAddEntry: (calendar_name: string, entry_type: 'event' | 'task') => Promise<void>
+  events: string[]
+  tasks: string[]
   onClose: () => void
+  onAddEntry: (name: string, type: string) => Promise<void>
 }
 
 const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, tasks, onAddEntry, onClose }) => {
@@ -112,7 +111,7 @@ const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, 
         ]}
       >
         <View style={styles.header}>
-          <Text style={styles.dateText}>{formatDate(date as string)}</Text>
+          <Text style={styles.dateText}>{formatDate(date)}</Text>
           <TouchableOpacity style={styles.menuButton} onPress={onClose}>
             <Ellipsis size={20} color="#666" />
           </TouchableOpacity>
@@ -125,7 +124,7 @@ const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, 
               events.map((event, index) => (
                 <View key={`event-${index}`} style={styles.itemContainer}>
                   <View style={styles.purpleBar} />
-                  <Text style={styles.itemText}>{event.name}</Text>
+                  <Text style={styles.itemText}>{event}</Text>
                 </View>
               ))
             ) : (
@@ -139,7 +138,7 @@ const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, 
               tasks.map((task, index) => (
                 <View key={`task-${index}`} style={styles.itemContainer}>
                   <View style={styles.purpleBar} />
-                  <Text style={styles.itemText}>{task.name}</Text>
+                  <Text style={styles.itemText}>{task}</Text>
                 </View>
               ))
             ) : (
@@ -195,7 +194,6 @@ const DatePopup: React.FC<DatePopupProps> = ({ visible, date, position, events, 
                   setName("");
                 } catch (e) {
                   setError("Failed to add task.");
-                  console.log("Add entry error:", e);
                 } finally {
                   setLoading(false);
                 }

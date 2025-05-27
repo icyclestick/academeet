@@ -13,11 +13,9 @@ const ChatProvider = ({children}: PropsWithChildren) => {
     const {profile} = useAuth();
 
     useEffect(() => {
-
         if(!profile){
             return;
         }
-        console.log('profile changed', profile?.id)
 
         const connect = async () => {
 
