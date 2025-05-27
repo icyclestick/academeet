@@ -20,15 +20,36 @@ async function fetchMatchIds(userId: string): Promise<number[]> {
 
 // Fetch all events for the user (personal + shared)
 async function fetchEvents(userId: string, matchIds: number[]): Promise<CalendarEntry[]> {
-  const { data, error } = await supabase
-    .from("calendars")
-    .select("*")
-    .or([
-      `user_id.eq.${userId}`,
-      matchIds.length > 0 ? `match_id.in.(${matchIds.join(",")})` : "match_id.eq.null"
-    ].join(","));
-  if (error) throw error;
-  return data || [];
+  try {
+    // Build query for user's personal events
+    let query = supabase
+      .from("calendars")
+      .select("*")
+      .eq("user_id", userId);
+    
+    // Log what we're fetching
+    console.log(`Fetching events for user: ${userId}`);
+    console.log(`Match IDs available: ${matchIds.length > 0 ? matchIds.join(", ") : "none"}`);
+    
+    // Execute the query
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error("Error fetching events:", error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log("No events found in database");
+      return [];
+    }
+    
+    console.log(`Found ${data.length} events in database`);
+    return data;
+  } catch (err) {
+    console.error("Error in fetchEvents:", err);
+    return [];
+  }
 }
 
 // Add new event or task
@@ -47,25 +68,44 @@ async function addEvent({
   date: string;
   entry_type: 'event' | 'task';
 }): Promise<void> {
-  const insertObj: any = {
-    calendar_type,
-    user_id,
-    calendar_name,
-    date,
-    entry_type
-  };
-  // Only include match_id if it is a valid number (not null or undefined)
-  if (typeof match_id === 'number') {
-    insertObj.match_id = match_id;
+  try {
+    // Create a clean object with only the fields we want
+    const insertObj: any = {
+      calendar_type,
+      user_id, 
+      calendar_name,
+      date,
+      entry_type
+    };
+    
+    // Only include match_id if it's a valid number
+    if (typeof match_id === 'number' && !isNaN(match_id)) {
+      insertObj.match_id = match_id;
+    }
+    
+    // Extra defense against null/undefined values
+    Object.keys(insertObj).forEach(key => {
+      if (insertObj[key] === null || insertObj[key] === undefined || insertObj[key] === 'null') {
+        delete insertObj[key];
+      }
+    });
+    
+    // Log what we're about to insert
+    console.log("Clean insert object:", insertObj);
+    
+    // Insert with .select() to return the inserted row
+    const { data, error } = await supabase
+      .from("calendars")
+      .insert([insertObj])
+      .select();
+      
+    if (error) throw error;
+    console.log("Successfully inserted:", data);
+    return data;
+  } catch (err) {
+    console.error("Add entry error:", err);
+    throw err;
   }
-  // Defensive: Remove all null/undefined fields from insertObj
-  Object.keys(insertObj).forEach(
-    (key) => (insertObj[key] === null || insertObj[key] === undefined) && delete insertObj[key]
-  );
-  // Log the object you are about to insert
-  console.log("Inserting into calendars:", insertObj);
-  const { error } = await supabase.from("calendars").insert([insertObj]);
-  if (error) throw error;
 }
 
 // Transform events to markedDates
@@ -112,7 +152,10 @@ export default function Index() {
 
   // Fetch events when userId or matchIds change
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      console.log("No userId available, skipping event fetch");
+      return;
+    }
     (async () => {
       const allEvents = await fetchEvents(userId, matchIds);
       setEvents(allEvents);
