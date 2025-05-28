@@ -1,151 +1,34 @@
-import {View, ActivityIndicator, Text, TouchableOpacity, Animated, Dimensions, SafeAreaView, TextInput, ScrollView, Switch} from 'react-native'
-import React, { useEffect, useState, useRef } from 'react'
-import { useAuth } from "@/providers/AuthProviders";
-import { useChatContext } from "stream-chat-expo";
-import { Channel, MessageInput, MessageList } from "stream-chat-expo";
-import { Channel as ChannelType } from 'stream-chat';
+import React, { useEffect, useState } from 'react';
+import {
+    View,
+    ActivityIndicator,
+    Text,
+    TouchableOpacity,
+    SafeAreaView,
+} from 'react-native';
+import { useAuth } from '@/providers/AuthProviders';
+import {
+    useChatContext,
+    Channel,
+    MessageInput,
+    MessageList,
+} from 'stream-chat-expo';
+import type { Channel as StreamChannel } from 'stream-chat';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from "@/lib/supabase";
+import Sidebar from '@/components/Sidebar';
+import {supabase} from "@/lib/supabase";
 
-const screenWidth = Dimensions.get("window").width;
-
-const Sidebar = ({ visible, onClose, events, tasks }) => {
-    const slideAnim = useRef(new Animated.Value(screenWidth)).current;
-    
-    useEffect(() => {
-        Animated.timing(slideAnim, {
-            toValue: visible ? 0 : screenWidth,
-            duration: 300,
-            useNativeDriver: true,
-        }).start();
-    }, [visible]);
-    
+const ChatHeader = ({
+                        onCalendarPress,
+                    }: {
+    onCalendarPress: () => void;
+}) => {
     return (
-        <Animated.View style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            height: '100%',
-            width: '70%',
-            backgroundColor: '#F7F6FB',
-            borderLeftWidth: 1,
-            borderLeftColor: '#ddd',
-            zIndex: 100,
-            transform: [{ translateX: slideAnim }],
-        }}>
-            <SafeAreaView style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#503E74', padding: 16, zIndex: 10 }}>
-                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Calendar</Text>
-                    <TouchableOpacity onPress={onClose}>
-                        <Ionicons name="close" size={24} color="white" />
-                    </TouchableOpacity>
-                </View>
-                
-                <View style={{ padding: 16, flex: 1 }}>
-                    <ScrollView style={{ flex: 1 }}>
-                        {/* Events List */}
-                        <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Events</Text>
-                        {events && events.length > 0 ? (
-                            events.map((e, i) => (
-                                <View key={i} style={{ 
-                                    backgroundColor: 'white', 
-                                    padding: 12, 
-                                    borderRadius: 8, 
-                                    marginBottom: 8,
-                                    borderLeftWidth: 4,
-                                    borderLeftColor: e.match_id ? '#4CAF50' : '#2196F3'
-                                }}>
-                                    <Text style={{ fontSize: 16 }}>{e.calendar_name}</Text>
-                                    <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                                        {e.match_id ? 'With Buddy' : 'Personal'}
-                                    </Text>
-                                </View>
-                            ))
-                        ) : (
-                            <Text style={{ color: '#888', marginBottom: 16 }}>No events for this date</Text>
-                        )}
-                        
-                        {/* Tasks List */}
-                        <Text style={{ fontWeight: 'bold', fontSize: 16, marginVertical: 8 }}>Tasks</Text>
-                        {tasks && tasks.length > 0 ? (
-                            tasks.map((t, i) => (
-                                <View key={i} style={{ 
-                                    backgroundColor: 'white', 
-                                    padding: 12, 
-                                    borderRadius: 8, 
-                                    marginBottom: 8,
-                                    borderLeftWidth: 4,
-                                    borderLeftColor: t.match_id ? '#4CAF50' : '#2196F3'
-                                }}>
-                                    <Text style={{ fontSize: 16 }}>{t.calendar_name}</Text>
-                                    <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                                        {t.match_id ? 'With Buddy' : 'Personal'}
-                                    </Text>
-                                </View>
-                            ))
-                        ) : (
-                            <Text style={{ color: '#888' }}>No tasks for this date</Text>
-                        )}
-                    </ScrollView>
-                </View>
-            </SafeAreaView>
-        </Animated.View>
-    );
-};
-
-// Date Selector Component
-const DateSelector = ({ selectedDate, onDateChange }) => {
-    // Generate an array of dates (7 days before and after the selected date)
-    const dates = [];
-    const selected = new Date(selectedDate);
-    
-    for (let i = -7; i <= 7; i++) {
-        const date = new Date(selected);
-        date.setDate(date.getDate() + i);
-        dates.push(date);
-    }
-    
-    return (
-        <View>
-            <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingVertical: 10 }}
-            >
-                {dates.map((date, index) => {
-                    const dateString = date.toISOString().split('T')[0];
-                    const isSelected = dateString === selectedDate;
-                    const isToday = dateString === new Date().toISOString().split('T')[0];
-                    
-                    return (
-                        <TouchableOpacity
-                            key={index}
-                            style={{
-                                padding: 10,
-                                marginHorizontal: 4,
-                                backgroundColor: isSelected ? '#503E74' : (isToday ? '#f0f0f0' : 'transparent'),
-                                borderRadius: 8,
-                                alignItems: 'center',
-                                minWidth: 45,
-                            }}
-                            onPress={() => onDateChange(dateString)}
-                        >
-                            <Text style={{ 
-                                color: isSelected ? 'white' : 'black',
-                                fontWeight: isToday ? 'bold' : 'normal'
-                            }}>
-                                {date.getDate()}
-                            </Text>
-                            <Text style={{ 
-                                fontSize: 12,
-                                color: isSelected ? 'white' : '#666'
-                            }}>
-                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
-            </ScrollView>
+        <View className="flex-row justify-between items-center p-4 bg-white border-b border-gray-200">
+            <Text className="text-lg font-semibold text-gray-800">Chat</Text>
+            <TouchableOpacity onPress={onCalendarPress}>
+                <Ionicons name="calendar" size={24} color="#503E74" />
+            </TouchableOpacity>
         </View>
     );
 };
@@ -155,66 +38,67 @@ const Chat = () => {
     const { client } = useChatContext();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [channel, setChannel] = useState<ChannelType | null>(null);
+    const [channel, setChannel] = useState<StreamChannel | null>(null);
     const [showSidebar, setShowSidebar] = useState(false);
-    const [events, setEvents] = useState([]);
-    const [tasks, setTasks] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [isLoadingCalendar, setIsLoadingCalendar] = useState(false);
-    const userId = user?.id;
 
     useEffect(() => {
-        // Find the single conversation
-        const findChannel = async () => {
-            if (user?.id) {
-                try {
-                    setLoading(true);
-                    const channels = await client.queryChannels({
-                        members: { $in: [user.id] },
-                        type: 'messaging'
-                    }, {}, {
-                        limit: 1
-                    });
-                    if (channels && channels.length > 0) {
-                        setChannel(channels[0]);
-                    } else {
-                        setError("No conversation found");
-                    }
-                } catch (err) {
-                    setError("Something went wrong");
-                } finally {
-                    setLoading(false);
+        const setupChannel = async () => {
+            if (!user?.id) {
+                setError('User not authenticated');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+
+                const { data: match, error } = await supabase
+                    .from('matches')
+                    .select('user1_id, user2_id')
+                    .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+                    .eq('is_active', true)
+                    .single();
+
+                let buddyId: string | null = null;
+                if (match) {
+                    buddyId = match.user1_id === user.id ? match.user2_id : match.user1_id;
                 }
-            } else {
-                setError("User not authenticated");
+
+                if (buddyId) {
+                    const channels = await client.queryChannels(
+                        {
+                            type: 'messaging',
+                            members: { $eq: [user.id, buddyId] },
+                        },
+                        { last_message_at: -1 },
+                        { limit: 1 }
+                    );
+                    // ...setChannel logic here
+                    if (channels.length > 0) {
+                        const channel = channels[0];
+                        const members = Object.entries(channel.data?.members ?? {});
+                        const buddyMember = members.find(([id]) => id !== user.id);
+
+                        if (!buddyMember) {
+                            setError('Could not find buddy in channel');
+                            return;
+                        }
+    
+                        setChannel(channel);
+                        return;
+                    }
+                }
+
+
+            } catch (err) {
+                console.error('Channel setup error:', err);
+                setError('Could not load chat');
+            } finally {
                 setLoading(false);
             }
         };
-        findChannel();
-    }, [user?.id, client]);
-
-    // Fetch all events and tasks for the user (no date filtering, no adding)
-    const fetchAllCalendarData = async (userId) => {
-        if (!userId) return;
-        try {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from("calendars")
-                .select("*")
-                .eq("user_id", userId);
-            if (error) throw error;
-            setEvents(data.filter(item => item.entry_type === 'event'));
-            setTasks(data.filter(item => item.entry_type === 'task'));
-        } catch (err) {
-            console.error("Error fetching all calendar data:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (userId) fetchAllCalendarData(userId);
-    }, [userId]);
+        setupChannel();
+    }, [user?.id]);
 
     if (loading) {
         return (
@@ -224,6 +108,7 @@ const Chat = () => {
             </View>
         );
     }
+
     if (error) {
         return (
             <View className="flex-1 justify-center items-center bg-gray-100 p-4">
@@ -234,6 +119,7 @@ const Chat = () => {
             </View>
         );
     }
+
     if (!channel) {
         return (
             <View className="flex-1 justify-center items-center bg-gray-100">
@@ -241,38 +127,12 @@ const Chat = () => {
             </View>
         );
     }
+
     return (
         <>
-            {/* Only header in SafeAreaView */}
             <SafeAreaView style={{ backgroundColor: 'white' }}>
-                <View className="flex-row items-center p-4 bg-white border-b border-gray-200">
-                    <Text style={{ fontWeight: 'bold', fontSize: 20, flex: 1 }}>
-                        {(() => {
-                            // Try to get a good channel name
-                            if (channel.data?.name) {
-                                return channel.data.name;
-                            }
-                            
-                            // For direct messages, use the other user's name
-                            if (channel.data?.members && user?.id) {
-                                // Get members excluding the current user
-                                const otherMembers = Object.entries(channel.data.members)
-                                    .filter(([id]) => id !== user.id)
-                                    .map(([_, memberData]) => memberData.user);
-                                
-                                if (otherMembers.length > 0 && otherMembers[0]?.name) {
-                                    return otherMembers[0].name;
-                                }
-                            }
-                            return 'Chat';
-                        })()}
-                    </Text>
-                    <TouchableOpacity onPress={() => setShowSidebar(true)}>
-                        <Ionicons name="calendar" size={24} color="#503E74" />
-                    </TouchableOpacity>
-                </View>
+                <ChatHeader onCalendarPress={() => setShowSidebar(true)} />
             </SafeAreaView>
-            {/* Main chat area fills remaining space */}
             <View className="flex-1 bg-gray-100">
                 <Channel channel={channel}>
                     <View className="flex-1">
@@ -280,10 +140,14 @@ const Chat = () => {
                         <MessageInput />
                     </View>
                 </Channel>
-                <Sidebar visible={showSidebar} onClose={() => setShowSidebar(false)} events={events} tasks={tasks} onDateChange={(date) => setSelectedDate(date)} />
+                <Sidebar
+                    visible={showSidebar}
+                    onClose={() => setShowSidebar(false)}
+                    userId={user?.id}
+                />
             </View>
         </>
     );
-}
+};
 
-export default Chat
+export default Chat;

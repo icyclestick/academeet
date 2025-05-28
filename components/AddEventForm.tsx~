@@ -96,12 +96,7 @@ export const AddEventForm: React.FC<AddEventFormProps> = ({ onCancel, onSubmit, 
                         }
                     }}
                     disabled={!eventName || !eventDate || loading}
-                    className={`rounded px-4 py-2 flex-row items-center`}
-                    style={{
-                        backgroundColor: !eventName || !eventDate || loading
-                            ? '#b6c2b6'
-                            : '#A3AC74',
-                    }}
+                    className={`rounded px-4 py-2 flex-row items-center ${!eventName || !eventDate || loading ? 'bg-[#b6c2b6]' : 'bg-[#A3AC74]'}`}
                 >
                     {loading ? (
                         <ActivityIndicator size="small" color="white" style={{ marginRight: 4 }} />

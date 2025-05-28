@@ -1,22 +1,34 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Animated, SafeAreaView, ScrollView, Dimensions } from 'react-native';
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from '@expo/vector-icons';
 import ModalWrapper from "@/components/ModalWrapper";
 import AddTaskForm from "@/components/AddTaskForm";
+import AddEventForm from "@/components/AddEventForm";
 
 const screenWidth = Dimensions.get("window").width;
 
 type SidebarProps = {
     visible: boolean;
     onClose: () => void;
-    events: any[];
-    tasks: any[];
+    userId: string | undefined;
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) => {
+const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, userId }) => {
     const slideAnim = useRef(new Animated.Value(screenWidth)).current;
 
     const [showAddTask, setShowAddTask] = useState(false);
+    const [showAddEvent, setShowAddEvent] = useState(false);
+    interface CalendarEntry {
+        id: string;
+        calendar_name: string;
+        date: string;
+        match_id: string | null;
+    }
+
+    const [events, setEvents] = useState<CalendarEntry[]>([]);
+    const [tasks, setTasks] = useState<CalendarEntry[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         Animated.timing(slideAnim, {
@@ -26,15 +38,19 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
         }).start();
     }, [visible]);
 
-    const handleAddTaskSubmit = async ({
-                                           taskName,
-                                           calendarType,
-                                           deadline,
-                                       }: {
-        taskName: string;
-        calendarType: 'personal' | 'shared';
-        deadline: Date;
-    }) => {
+    interface CalendarItem {
+        name: string;
+        type: 'personal' | 'shared' | null;
+        date: Date;
+        entryType: 'task' | 'event';
+    }
+
+    const handleAddCalendarItem = async ({
+        name,
+        type,
+        date,
+        entryType,
+    }: CalendarItem) => {
         setLoading(true);
 
         const {
@@ -51,44 +67,111 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
         const userId = user.id;
         let matchId: number | null = null;
 
-        if (calendarType === 'shared') {
+        if (type === 'shared') {
             // Get active match involving this user
             const { data: matches, error: matchError } = await supabase
                 .from('matches')
                 .select('id')
                 .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
-                .eq('is_active', true)
-                .limit(1)
-                .single();
+                .eq('is_active', 'true');
 
-            if (matchError || !matches) {
-                console.error('No active match found or error occurred', matchError);
+            if (matchError || !matches || matches.length === 0) {
+                console.error('No active match found for shared item', matchError);
                 setLoading(false);
                 return;
             }
 
-            matchId = matches.id;
+            matchId = matches[0].id;
         }
 
         const { error: insertError } = await supabase.from('calendars').insert({
-            calendar_type: calendarType,
-            entry_type: 'task',
-            calendar_name: taskName,
-            date: deadline.toISOString().split('T')[0], // if using `date`, not `timestamp`
+            calendar_type: type,
+            entry_type: entryType,
+            calendar_name: name,
+            date: date.toISOString().split('T')[0],
             user_id: userId,
             match_id: matchId,
         });
 
         if (insertError) {
-            console.error('Error inserting task:', insertError);
+            console.error('Error inserting calendar item:', insertError);
+            return false;
         } else {
-            console.log('Task added!');
-            // Optionally refresh tasks or close the form
+            console.log(`${entryType} added!`);
+            fetchAllCalendarData(userId);
+        }
+        setLoading(false);
+        return true;
+    };
+
+    const fetchAllCalendarData = async (userId: string | null) => {
+        if (!userId) return;
+
+        // Get user's matches
+        const { data: matches, error: matchError } = await supabase
+            .from('matches')
+            .select('id')
+            .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+            .eq('is_active', 'true');
+
+        if (matchError) {
+            console.error('Error fetching matches:', matchError);
+            setLoading(false);
+            return;
+        }
+
+        // Get all events (personal and shared)
+        const { data: eventsData, error: eventsError } = await supabase
+            .from('calendars')
+            .select('id, calendar_name, date, match_id')
+            .eq('entry_type', 'event')
+            .or(
+                `user_id.eq.${userId},match_id.in.(${matches?.map(m => m.id).join(',')})`
+            );
+
+        if (eventsError) {
+            console.error('Error fetching events:', eventsError);
+        } else {
+            setEvents(eventsData || []);
+        }
+
+        // Get all tasks (personal and shared)
+        const { data: tasksData, error: tasksError } = await supabase
+            .from('calendars')
+            .select('id, calendar_name, date, match_id')
+            .eq('entry_type', 'task')
+            .or(
+                `user_id.eq.${userId},match_id.in.(${matches?.map(m => m.id).join(',')})`
+            );
+
+        if (tasksError) {
+            console.error('Error fetching tasks:', tasksError);
+        } else {
+            setTasks(tasksData || []);
         }
 
         setLoading(false);
     };
 
+    useEffect(() => {
+        if (!userId) return;
+
+        const controller = new AbortController();
+        
+        const fetchData = async () => {
+            try {
+                await fetchAllCalendarData(userId);
+            } catch (error) {
+                console.error('Error fetching calendar data:', error);
+            }
+        };
+
+        fetchData();
+
+        return () => {
+            controller.abort();
+        };
+    }, [userId]);
 
     return (
         <Animated.View style={{
@@ -108,33 +191,61 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
         }}>
             <SafeAreaView style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#503E74', padding: 16, zIndex: 10 }}>
-                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Calendar</Text>
+                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Task Tracker</Text>
                     <TouchableOpacity onPress={onClose}>
                         <Ionicons name="close" size={24} color="white" />
                     </TouchableOpacity>
                 </View>
                 <ModalWrapper visible={showAddTask} onClose={() => setShowAddTask(false)}>
-                    <AddTaskForm onSubmit={...} onCancel={() => setShowAddTask(false)} />
+                    <AddTaskForm
+                        onSubmit={async (data) => {
+                            setLoading(true);
+                            const success = await handleAddCalendarItem({
+                                name: data.taskName,
+                                type: data.calendarType,
+                                date: data.deadline,
+                                entryType: 'task'
+                            });
+                            setLoading(false);
+                            if (success) setShowAddTask(false); // <-- fix here
+                        }}
+                        onCancel={() => setShowAddTask(false)}
+                        loading={loading}
+                    />
                 </ModalWrapper>
-                <View style={{ padding: 16, flex: 1 }}>
-                    <ScrollView style={{ flex: 1 }}>
+                <ModalWrapper visible={showAddEvent} onClose={() => setShowAddEvent(false)}>
+                    <AddEventForm 
+                        onSubmit={(data) => handleAddCalendarItem({
+                            name: data.eventName,
+                            type: data.calendarType,
+                            date: data.eventDate,
+                            entryType: 'event'
+                        })} 
+                        onCancel={() => setShowAddEvent(false)}
+                    />
+                </ModalWrapper>
+                <View className="p-4 flex-1">
+                    <ScrollView className="flex-1">
                         {/* Events List */}
                         <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8 }}>Events</Text>
-                        {events && events.length > 0 ? (
+                        {events.length > 0 ? (
                             events.map((e, i) => (
-                                <View key={i} style={{
-                                    backgroundColor: 'white',
-                                    padding: 12,
-                                    borderRadius: 8,
-                                    marginBottom: 8,
-                                    borderLeftWidth: 4,
-                                    borderLeftColor: e.match_id ? '#4CAF50' : '#2196F3'
-                                }}>
-                                    <Text style={{ fontSize: 16 }}>{e.calendar_name}</Text>
-                                    <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                                <View key={e.id}
+                                      style={{
+                                          backgroundColor: 'white',
+                                          padding: 12,
+                                          borderRadius: 8,
+                                          marginBottom: 8,
+                                          borderLeftWidth: 4,
+                                          borderLeftColor: e.match_id ? '#4CAF50' : '#2196F3',
+                                          marginLeft: 14,
+                                }}
+                                >
+                                    <Text className="text-lg ">{e.calendar_name}</Text>
+                                    <Text className="text-sm text-gray-400 my-1">
                                         {e.match_id ? 'With Buddy' : 'Personal'}
                                     </Text>
-                                    <Text style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
+                                    <Text className="text-sm text-gray-600 my-0.5">
                                         {e.date ? new Date(e.date).toLocaleDateString() : ''}
                                     </Text>
                                 </View>
@@ -144,15 +255,16 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
                         )}
                         {/* Tasks List */}
                         <Text style={{ fontWeight: 'bold', fontSize: 16, marginVertical: 8 }}>Tasks</Text>
-                        {tasks && tasks.length > 0 ? (
-                            tasks.map((t, i) => (
-                                <View key={i} style={{
+                        {tasks.length > 0 ? (
+                            tasks.map((t) => (
+                                <View key={t.id} style={{
                                     backgroundColor: 'white',
                                     padding: 12,
                                     borderRadius: 8,
                                     marginBottom: 8,
                                     borderLeftWidth: 4,
-                                    borderLeftColor: t.match_id ? '#4CAF50' : '#2196F3'
+                                    borderLeftColor: t.match_id ? '#4CAF50' : '#2196F3',
+                                    marginLeft: 14,
                                 }}>
                                     <Text style={{ fontSize: 16 }}>{t.calendar_name}</Text>
                                     <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
@@ -164,9 +276,23 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, events, tasks }) =>
                                 </View>
                             ))
                         ) : (
-                            <Text style={{ color: '#888' }}>No tasks</Text>
+                            <Text style={{ color: '#888', marginBottom: 16 }}>No tasks</Text>
                         )}
                     </ScrollView>
+                    <View className="flex-row justify-between mt-4">
+                        <TouchableOpacity
+                            onPress={() => setShowAddTask(true)}
+                            className="p-4 bg-englishViolet rounded-full"
+                        >
+                            <Text className="text-white font-bold">Add Task</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setShowAddEvent(true)}
+                            className="p-4 bg-englishViolet rounded-full"
+                        >
+                            <Text className="text-white font-bold">Add Event</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </SafeAreaView>
         </Animated.View>

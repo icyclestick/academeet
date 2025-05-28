@@ -83,7 +83,7 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({ onCancel, onSubmit, lo
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => onSubmit({ taskName, calendarType, deadline })}
-                    disabled={!taskName || !deadline || loading}
+                    disabled={!taskName || !calendarType || !deadline || loading}
                     className={`rounded px-4 py-2 flex-row items-center`}
                     style={{
                         backgroundColor: !taskName || !deadline || loading
