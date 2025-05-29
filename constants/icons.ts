@@ -26,6 +26,7 @@ import timeSand from "@/Assets/Icons/time-sand.svg";
 import userWhite from "@/Assets/Icons/user-white.svg";
 import userYellow from "@/Assets/Icons/user-yellow.svg";
 import videoIcon from "@/Assets/Icons/Video.svg";
+import homeWhite from "@/Assets/Icons/home-white.svg";
 
 export const icons = {
     addCircle,
@@ -41,6 +42,7 @@ export const icons = {
     focus,
     gallery1,
     homeYellow,
+    homeWhite,
     MuteUnmute,
     Next,
     person,

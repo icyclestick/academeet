@@ -1,10 +1,15 @@
-import { Dimensions, Image, SafeAreaView, Text, View } from "react-native";
-import { Calendar } from 'react-native-calendars';
+import { Image, SafeAreaView, Text, View } from "react-native";
+import { Calendar } from "react-native-calendars";
 import { useEffect, useState, useCallback } from "react";
 import DatePopup from "@/components/DatePopup";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/providers/AuthProviders";
 import type { CalendarEntry } from "@/types/calendar";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import logoIcon from "@/Assets/Images/logo-icon.png";
+import logoName from "@/Assets/Images/logo-name.png";
+import BookIcon from "@/Assets/Images/Book.png.png";
 
 type MarkedDates = { [date: string]: any };
 
@@ -15,36 +20,40 @@ async function fetchMatchIds(userId: string): Promise<number[]> {
     .select("id")
     .or(`user1.eq.${userId},user2.eq.${userId}`);
   if (error) throw error;
-  return data ? data.map(row => row.id) : [];
+  return data ? data.map((row) => row.id) : [];
 }
 
 // Fetch all events for the user (personal + shared)
-async function fetchEvents(userId: string, matchIds: number[]): Promise<CalendarEntry[]> {
+async function fetchEvents(
+  userId: string,
+  matchIds: number[]
+): Promise<CalendarEntry[]> {
   try {
     // Build query for user's personal events
     console.log("Fetching events for user:", userId);
-    let query = supabase
-      .from("calendars")
-      .select("*")
-      .eq("user_id", userId);
-    
+    let query = supabase.from("calendars").select("*").eq("user_id", userId);
+
     // Log what we're fetching
     console.log(`Fetching events for user: ${userId}`);
-    console.log(`Match IDs available: ${matchIds.length > 0 ? matchIds.join(", ") : "none"}`);
-    
+    console.log(
+      `Match IDs available: ${
+        matchIds.length > 0 ? matchIds.join(", ") : "none"
+      }`
+    );
+
     // Execute the query
     const { data, error } = await query;
-    
+
     if (error) {
       console.error("Error fetching events:", error);
       throw error;
     }
-    
+
     if (!data || data.length === 0) {
       console.log("No events found in database");
       return [];
     }
-    
+
     console.log(`Found ${data.length} events in database`);
     return data;
   } catch (err) {
@@ -67,39 +76,43 @@ async function addEvent({
   match_id?: number | null;
   calendar_name: string;
   date: string;
-  entry_type: 'event' | 'task';
+  entry_type: "event" | "task";
 }): Promise<any> {
   try {
     // Create a clean object with only the fields we want
     const insertObj: any = {
       calendar_type,
-      user_id, 
+      user_id,
       calendar_name,
       date,
-      entry_type
+      entry_type,
     };
-    
+
     // Only include match_id if it's a valid number
-    if (typeof match_id === 'number' && !isNaN(match_id)) {
+    if (typeof match_id === "number" && !isNaN(match_id)) {
       insertObj.match_id = match_id;
     }
-    
+
     // Extra defense against null/undefined values
-    Object.keys(insertObj).forEach(key => {
-      if (insertObj[key] === null || insertObj[key] === undefined || insertObj[key] === 'null') {
+    Object.keys(insertObj).forEach((key) => {
+      if (
+        insertObj[key] === null ||
+        insertObj[key] === undefined ||
+        insertObj[key] === "null"
+      ) {
         delete insertObj[key];
       }
     });
-    
+
     // Log what we're about to insert
     console.log("Clean insert object:", insertObj);
-    
+
     // Insert with .select() to return the inserted row
     const { data, error } = await supabase
       .from("calendars")
       .insert([insertObj])
       .select();
-      
+
     if (error) throw error;
     console.log("Successfully inserted:", data);
     return data;
@@ -110,22 +123,29 @@ async function addEvent({
 }
 
 // Transform events to markedDates
-function transformEventsToMarkedDates(events: CalendarEntry[], selectedDate: string | null): MarkedDates {
+function transformEventsToMarkedDates(
+  events: CalendarEntry[],
+  selectedDate: string | null
+): MarkedDates {
   const marked: MarkedDates = {};
-  
+
   events.forEach((event: CalendarEntry) => {
     if (!event.date) return;
-    
+
     // Normalize date format to YYYY-MM-DD
-    const dateStr = event.date.split('T')[0];
-    
+    const dateStr = event.date.split("T")[0];
+
     if (!marked[dateStr]) {
       marked[dateStr] = {
         customStyles: {
           container: {
             borderBottomWidth: 4,
-            borderBottomColor: event.calendar_type === "personal" ? "#503E74" : "#3EA16C",
-            backgroundColor: dateStr === selectedDate ? "rgba(80, 62, 116, 0.3)" : "transparent",
+            borderBottomColor:
+              event.calendar_type === "personal" ? "#503E74" : "#3EA16C",
+            backgroundColor:
+              dateStr === selectedDate
+                ? "rgba(80, 62, 116, 0.3)"
+                : "transparent",
             borderRadius: dateStr === selectedDate ? 5 : 0,
           },
           text: {
@@ -148,7 +168,10 @@ function Index() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showPopup, setShowPopup] = useState<boolean>(false);
-  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [popupPosition, setPopupPosition] = useState<{
+    top: number;
+    left: number;
+  }>({ top: 0, left: 0 });
 
   // Fetch matchIds when userId changes
   useEffect(() => {
@@ -179,33 +202,44 @@ function Index() {
     })();
   }, [userId, matchIds]);
 
+  useEffect(() => {
+    setMarkedDates(transformEventsToMarkedDates(events, selectedDate));
+  }, [events, selectedDate]);
+
   // Debug logs for event filtering
   console.log("All events:", events);
   console.log("Selected date:", selectedDate);
 
   // Separate events and tasks for the selected date (robust date matching)
-  const eventsForDate: CalendarEntry[] = events.filter(ev => 
-    ev.date && selectedDate && ev.date.split('T')[0] === selectedDate && ev.entry_type === "event"
+  const eventsForDate: CalendarEntry[] = events.filter(
+    (ev) =>
+      ev.date &&
+      selectedDate &&
+      ev.date.split("T")[0] === selectedDate &&
+      ev.entry_type === "event"
   );
-  const tasksForDate: CalendarEntry[] = events.filter(ev =>
-    ev.date && selectedDate && ev.date.split('T')[0] === selectedDate && ev.entry_type === "task"
+  const tasksForDate: CalendarEntry[] = events.filter(
+    (ev) =>
+      ev.date &&
+      selectedDate &&
+      ev.date.split("T")[0] === selectedDate &&
+      ev.entry_type === "task"
   );
 
   // Log filtered events and tasks for the selected date
   console.log("eventsForDate:", eventsForDate);
   console.log("tasksForDate:", tasksForDate);
 
-  // Handle day press
   const onDayPress = useCallback((day: { dateString: string }) => {
     setSelectedDate(day.dateString);
     setShowPopup(true);
-    
-    // Update marked dates to highlight the selected date
-    setMarkedDates(transformEventsToMarkedDates(events, day.dateString));
   }, []);
 
   // Handle adding a new event or task (personal, for home tab)
-  const handleAddPersonalEntry = async (calendar_name: string, entry_type: 'event' | 'task') => {
+  const handleAddPersonalEntry = async (
+    calendar_name: string,
+    entry_type: "event" | "task"
+  ) => {
     let addError = null;
     try {
       await addEvent({
@@ -213,7 +247,7 @@ function Index() {
         user_id: userId!, // forced, since personal events only allowed if logged in
         calendar_name,
         date: selectedDate!,
-        entry_type
+        entry_type,
       });
     } catch (err) {
       addError = err;
@@ -238,24 +272,21 @@ function Index() {
   };
 
   return (
-    <SafeAreaView className="flex-1 justify-center items-center bg-isabelline gap-4">
-      <Image
-        source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
-        className="w-36 h-10 bg-gray-300 rounded-lg self-start ml-6"
-        resizeMode="cover"
-      />
+    <SafeAreaView className="flex-1 justify-start items-center bg-isabelline gap-4">
+      <View className="flex-row justify-start items-center gap-2 mb-4 w-full px-6">
+        <Image source={logoIcon} resizeMode="cover" />
+        <Image source={logoName} resizeMode="cover" />
+      </View>
       <View className="flex-row w-3/4 h-40 bg-olivine rounded-lg items-center justify-center p-3">
         <View className="flex-1">
-          <Text className="text-white font-bold text-2xl">Hello, Kurt!</Text>
+          <Text className="text-white font-bold text-2xl">
+            Hello, {profile?.full_name || profile?.username || "there"}!
+          </Text>
           <Text className="text-white text-xs">
             Ready to hit the books and meet your perfect study buddy?
           </Text>
         </View>
-        <Image
-          source={{ uri: "https://via.placeholder.com/80" }} // Placeholder Image
-          className="w-24 h-24 bg-gray-300 rounded-lg"
-          resizeMode="cover"
-        />
+        <Image source={BookIcon} className="w-32 h-32" resizeMode="cover" />
       </View>
       {showPopup && (
         <DatePopup
@@ -311,10 +342,11 @@ function Index() {
       <View className="flex-row space-x-4 mt-4 gap-2">
         <View className="w-44 h-32 bg-jasmine rounded-lg justify-center p-3">
           <View className="flex-row items-center gap-2">
-            <Image
-              source={{ uri: "https://via.placeholder.com/80" }}
-              className="w-10 h-10 bg-gray-300 rounded-lg"
-              resizeMode="cover"
+            <Ionicons
+              className="w-10 h-10 rounded-lg items-center"
+              name="hourglass-outline"
+              size={32}
+              color="#503E74"
             />
             <Text className="color-black font-bold">Time</Text>
           </View>
@@ -323,11 +355,12 @@ function Index() {
           </Text>
         </View>
         <View className="w-44 h-22 bg-jasper rounded-lg justify-center p-3">
-          <View className="flex-row items-center gap-2">
-            <Image
-              source={{ uri: "https://via.placeholder.com/80" }}
-              className="w-10 h-10 bg-gray-300 rounded-lg"
-              resizeMode="cover"
+          <View className="flex-row items-center">
+            <MaterialCommunityIcons
+              className="w-10 h-10 rounded-lg items-center"
+              name="fire"
+              size={32}
+              color="white"
             />
             <Text className="color-white font-bold">Streak</Text>
           </View>
@@ -338,8 +371,23 @@ function Index() {
       </View>
       {/* Loading indicator */}
       {isLoading && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.1)' }}>
-          <Text style={{ backgroundColor: 'white', padding: 10, borderRadius: 5 }}>Loading...</Text>
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.1)",
+          }}
+        >
+          <Text
+            style={{ backgroundColor: "white", padding: 10, borderRadius: 5 }}
+          >
+            Loading...
+          </Text>
         </View>
       )}
     </SafeAreaView>
