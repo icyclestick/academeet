@@ -1,118 +1,146 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Switch } from 'react-native';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Switch,
+} from "react-native";
 import { Input } from "react-native-elements";
-import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 interface AddEventFormProps {
-    onCancel: () => void;
-    onSubmit: (data: { eventName: string; calendarType: 'personal' | 'shared'; eventDate: Date; description?: string }) => void;
-    loading?: boolean;
+  onCancel: () => void;
+  onSubmit: (data: {
+    eventName: string;
+    calendarType: "personal" | "shared";
+    eventDate: Date;
+  }) => void;
+  loading?: boolean;
+  initialEventName?: string;
+  initialEventDate?: Date;
+  initialCalendarType?: "personal" | "shared";
+  mode?: "add" | "edit";
 }
 
-export const AddEventForm: React.FC<AddEventFormProps> = ({ onCancel, onSubmit, loading = false }) => {
-    const [eventName, setEventName] = useState('');
-    const [calendarType, setCalendarType] = useState<'personal' | 'shared'>('personal');
-    const [eventDate, setEventDate] = useState<Date | null>(null);
-    const [description, setDescription] = useState('');
-    const [showPicker, setShowPicker] = useState(false);
+export const AddEventForm: React.FC<AddEventFormProps> = ({
+  onCancel,
+  onSubmit,
+  loading = false,
+  initialEventName = "",
+  initialEventDate,
+  initialCalendarType = "personal",
+}) => {
+  const [eventName, setEventName] = useState(initialEventName);
+  const [calendarType, setCalendarType] = useState<"personal" | "shared">(
+    initialCalendarType
+  );
+  const [eventDate, setEventDate] = useState<Date | null>(
+    initialEventDate || null
+  );
+  const [showPicker, setShowPicker] = useState(false);
 
-    return (
-        <View className="p-2">
-            <Text className="font-bold text-xl text-[#503E74] mb-3">Add Event</Text>
+  return (
+    <View className="p-2">
+      <Text className="font-bold text-xl text-[#503E74] mb-3">Add Event</Text>
 
-            {/* Event Name */}
-            <Text className="font-bold text-base">Event Name:</Text>
-            <Input
-                placeholder="Enter Event Name"
-                value={eventName}
-                onChangeText={setEventName}
-                inputStyle={{ fontSize: 14 }}
-                containerStyle={{ marginBottom: 8, marginTop: 2, paddingHorizontal: 0 }}
-                disabled={loading}
+      {/* Event Name */}
+      <Text className="font-bold text-base">Event Name:</Text>
+      <Input
+        placeholder="Enter Event Name"
+        value={eventName}
+        onChangeText={setEventName}
+        inputStyle={{ fontSize: 14 }}
+        containerStyle={{ marginBottom: 8, marginTop: 2, paddingHorizontal: 0 }}
+        disabled={loading}
+      />
+
+      {/* Sharable Toggle */}
+      <Text className="font-bold text-base mt-1">Sharable?</Text>
+      <View className="flex-row items-center mb-2 mt-1">
+        <Switch
+          value={calendarType === "shared"}
+          onValueChange={(value) =>
+            setCalendarType(value ? "shared" : "personal")
+          }
+          disabled={loading}
+        />
+        <Text className="ml-2 text-sm text-[#503E74]">
+          {calendarType === "shared" ? "Shared" : "Personal"}
+        </Text>
+      </View>
+
+      {/* Event Date */}
+      <Text className="font-bold text-base">Event Date:</Text>
+      <TouchableOpacity
+        className="border border-[#503E74] rounded p-2 mt-1 mb-3 flex-row items-center bg-[#f9f6ef]"
+        onPress={() => setShowPicker(true)}
+        disabled={loading}
+      >
+        <Text className={eventDate ? "text-[#503E74]" : "text-gray-400"}>
+          {eventDate ? eventDate.toLocaleString() : "Select Date & Time"}
+        </Text>
+      </TouchableOpacity>
+      {showPicker && (
+        <DateTimePicker
+          value={eventDate || new Date()}
+          mode="datetime"
+          display="default"
+          onChange={(event, selectedDate) => {
+            setShowPicker(false);
+            if (selectedDate) setEventDate(selectedDate);
+          }}
+        />
+      )}
+
+      {/* Buttons */}
+      <View className="flex-row justify-end mt-3">
+        <TouchableOpacity
+          onPress={onCancel}
+          className="bg-red-500 rounded px-4 py-2 mr-2 flex-row items-center"
+          disabled={loading}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={18}
+            color="white"
+            style={{ marginRight: 4 }}
+          />
+          <Text className="text-white font-bold">Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            if (eventDate) {
+              onSubmit({ eventName, calendarType, eventDate });
+            }
+          }}
+          disabled={!eventName || !eventDate || loading}
+          className={`rounded px-4 py-2 flex-row items-center`}
+          style={{
+            backgroundColor:
+              !eventName || !eventDate || loading ? "#b6c2b6" : "#A3AC74",
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator
+              size="small"
+              color="white"
+              style={{ marginRight: 4 }}
             />
-
-            {/* Sharable Toggle */}
-            <Text className="font-bold text-base mt-1">Sharable?</Text>
-            <View className="flex-row items-center mb-2 mt-1">
-                <Switch
-                    value={calendarType === 'shared'}
-                    onValueChange={(value) => setCalendarType(value ? 'shared' : 'personal')}
-                    disabled={loading}
-                />
-                <Text className="ml-2 text-sm text-[#503E74]">{calendarType === 'shared' ? 'Shared' : 'Personal'}</Text>
-            </View>
-
-            {/* Event Date */}
-            <Text className="font-bold text-base">Event Date:</Text>
-            <TouchableOpacity
-                className="border border-[#503E74] rounded p-2 mt-1 mb-3 flex-row items-center bg-[#f9f6ef]"
-                onPress={() => setShowPicker(true)}
-                disabled={loading}
-            >
-                <Text className={eventDate ? 'text-[#503E74]' : 'text-gray-400'}>
-                    {eventDate ? eventDate.toLocaleString() : 'Select Date & Time'}
-                </Text>
-            </TouchableOpacity>
-            {showPicker && (
-                <DateTimePicker
-                    value={eventDate || new Date()}
-                    mode="datetime"
-                    display="default"
-                    onChange={(event, selectedDate) => {
-                        setShowPicker(false);
-                        if (selectedDate) setEventDate(selectedDate);
-                    }}
-                />
-            )}
-
-            {/* Description (optional) */}
-            <Text className="font-bold text-base">Description (optional):</Text>
-            <Input
-                placeholder="Enter event description"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={3}
-                inputStyle={{ fontSize: 14, textAlignVertical: 'top' }}
-                containerStyle={{ marginBottom: 8, marginTop: 2, paddingHorizontal: 0 }}
-                disabled={loading}
+          ) : (
+            <Ionicons
+              name="checkmark-done"
+              size={18}
+              color="white"
+              style={{ marginRight: 4 }}
             />
-
-            {/* Buttons */}
-            <View className="flex-row justify-end mt-3">
-                <TouchableOpacity
-                    onPress={onCancel}
-                    className="bg-red-500 rounded px-4 py-2 mr-2 flex-row items-center"
-                    disabled={loading}
-                >
-                    <Ionicons name="arrow-back" size={18} color="white" style={{ marginRight: 4 }} />
-                    <Text className="text-white font-bold">Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => {
-                        if (eventDate) {
-                            onSubmit({ eventName, calendarType, eventDate, description });
-                        }
-                    }}
-                    disabled={!eventName || !eventDate || loading}
-                    className={`rounded px-4 py-2 flex-row items-center`}
-                    style={{
-                        backgroundColor: !eventName || !eventDate || loading
-                            ? '#b6c2b6'
-                            : '#A3AC74',
-                    }}
-                >
-                    {loading ? (
-                        <ActivityIndicator size="small" color="white" style={{ marginRight: 4 }} />
-                    ) : (
-                        <Ionicons name="checkmark-done" size={18} color="white" style={{ marginRight: 4 }} />
-                    )}
-                    <Text className="text-white font-bold">Add Event</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+          )}
+          <Text className="text-white font-bold">Add Event</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 };
 
 export default AddEventForm;

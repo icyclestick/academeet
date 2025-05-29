@@ -260,7 +260,7 @@ function Index() {
       {showPopup && (
         <DatePopup
           visible={showPopup}
-          date={selectedDate.toString()}
+          date={selectedDate ? selectedDate.toString() : ""}
           position={popupPosition}
           events={eventsForDate}
           tasks={tasksForDate}
