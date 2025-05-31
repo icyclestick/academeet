@@ -18,13 +18,28 @@ import { Ionicons } from "@expo/vector-icons";
 import Sidebar from "@/components/Sidebar";
 import { supabase } from "@/lib/supabase";
 
-const ChatHeader = ({ onCalendarPress }: { onCalendarPress: () => void }) => {
+import { useStreamVideoClient } from "@stream-io/video-react-native-sdk";
+import * as Crypto from "expo-crypto";
+import { router } from "expo-router";
+
+const ChatHeader = ({
+  onCalendarPress,
+  onVideoCallPress,
+}: {
+  onCalendarPress: () => void;
+  onVideoCallPress: () => void;
+}) => {
   return (
     <View className="flex-row justify-between items-center p-4 bg-white border-b border-gray-200">
-      <Text className="text-lg font-semibold text-gray-800">Chat</Text>
-      <TouchableOpacity onPress={onCalendarPress}>
-        <Ionicons name="calendar" size={24} color="#503E74" />
-      </TouchableOpacity>
+      <Text className="text-lg font-semibold text-gray-800">Chataa</Text>
+      <View className="flex-row space-x-4">
+        <TouchableOpacity onPress={onVideoCallPress}>
+          <Ionicons name="call" size={24} color="#503E74" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onCalendarPress}>
+          <Ionicons name="calendar" size={24} color="#503E74" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -32,6 +47,8 @@ const ChatHeader = ({ onCalendarPress }: { onCalendarPress: () => void }) => {
 const Chat = () => {
   const { user } = useAuth();
   const { client } = useChatContext();
+  const videoClient = useStreamVideoClient();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [channel, setChannel] = useState<StreamChannel | null>(null);
@@ -70,7 +87,7 @@ const Chat = () => {
             { last_message_at: -1 },
             { limit: 1 }
           );
-          // ...setChannel logic here
+
           if (channels.length > 0) {
             setChannel(channels[0]);
             return;
@@ -89,6 +106,36 @@ const Chat = () => {
     };
     setupChannel();
   }, [user?.id]);
+
+  const handleVideoCallPress = async () => {
+    if (!channel) {
+      console.warn("No active channel to start video call");
+      return;
+    }
+
+    try {
+      const members = Object.values(channel.state.members).map((member) => ({
+        user_id: member.user_id,
+      }));
+
+      // Create a new call instance with unique ID
+      const call = videoClient.call("default", Crypto.randomUUID());
+
+      // Create or get the call
+      await call.getOrCreate({
+        ring: true,
+        data: { members },
+      });
+
+      // Navigate to your video call screen, pass the call id
+      router.push({
+        pathname: "/(call)/callScreen",
+        params: { callId: call.id },
+      });
+    } catch (error) {
+      console.error("Error starting video call:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -121,7 +168,10 @@ const Chat = () => {
   return (
     <>
       <SafeAreaView style={{ backgroundColor: "white" }}>
-        <ChatHeader onCalendarPress={() => setShowSidebar(true)} />
+        <ChatHeader
+          onCalendarPress={() => setShowSidebar(true)}
+          onVideoCallPress={handleVideoCallPress}
+        />
       </SafeAreaView>
       <View className="flex-1 bg-gray-100 pb-28">
         <Channel channel={channel}>

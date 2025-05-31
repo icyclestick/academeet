@@ -1,28 +1,49 @@
 import {
   StreamCall,
-  StreamVideo,
-  StreamVideoClient,
-  User,
-  CallContent
-} from "@stream-io/video-react-native-sdk";
-import { useEffect, useState } from "react";
+  CallContent,
+  useStreamVideoClient,
+  RingingCallContent,
+  Call,
+  useCalls,
+} from '@stream-io/video-react-native-sdk';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator } from 'react-native';
 
-const apiKey = process.env.EXPO_PUBLIC_STREAM_API_KEY;
-const userId = "0a4d77fd-1b7d-4ca8-aca9-58c33c19641e";
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMGE0ZDc3ZmQtMWI3ZC00Y2E4LWFjYTktNThjMzNjMTk2NDFlIn0.twFRxX9NpJpDb9bNHOPPt7zVmxsnjtW63RggP2Ajh_Y";
-const callId = "default_98c61221-511e-4284-b1b9-f01ee1d3bd7a";
-const user: User = { id: userId };
+export default function CallScreen() {
+  const calls = useCalls();
+  const call = calls[0];
 
-const client = new StreamVideoClient({ apiKey, user, token });
-const call = client.call("default", callId);
-call.join({ create: true });
+  // const [call, setCall] = useState<Call>();
 
-export default function callScreen() {
+  // const client = useStreamVideoClient();
+
+  // useEffect(() => {
+  //   const fetchCall = async () => {
+  //     const call = client.call('default', id);
+  //     await call.get();
+  //     setCall(call);
+  //   };
+  //   fetchCall();
+  //   return () => {
+  //     if (call) {
+  //       call.leave();
+  //     }
+  //   };
+  // }, [id]);
+
+  if (!call) {
+    if (router.canGoBack) {
+      router.back();
+    } else {
+      router.push('/');
+    }
+    return null;
+  }
+
   return (
-    <StreamVideo client={client}>
-      <StreamCall call={call}>
-        <CallContent />
-      </StreamCall>
-    </StreamVideo>
+    <StreamCall call={call}>
+      <RingingCallContent />
+    </StreamCall>
   );
 }
